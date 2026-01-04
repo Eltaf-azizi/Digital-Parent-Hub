@@ -1,0 +1,13 @@
+{
+  "name": "digital-parent-hub",
+  "version": "1.0.0",
+  "description": "Digital Parent Hub - Activity Tracking Application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^25.0.0",
+    "active-win": "^8.2.1"
+  }
+}
