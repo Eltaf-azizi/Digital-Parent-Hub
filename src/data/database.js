@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
+const Database = require('better-sqlite3');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -41,7 +41,7 @@ const CATEGORY_RULES = {
   Social: ['skype', 'discord', 'facebook', 'twitter', 'instagram', 'whatsapp', 'telegram', 'zoom']
 };
 
-class Database {
+class MyDatabase {
   constructor() {
     this.db = null;
     this.key = null;
@@ -55,7 +55,7 @@ class Database {
 
   encryptBuffer(buffer, key) {
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipher('aes-256-gcm', key);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
     let encrypted = Buffer.concat([cipher.update(buffer), cipher.final()]);
     const authTag = cipher.getAuthTag();
     return Buffer.concat([iv, authTag, encrypted]);
@@ -65,24 +65,17 @@ class Database {
     const iv = encryptedBuffer.slice(0, 16);
     const authTag = encryptedBuffer.slice(16, 32);
     const encrypted = encryptedBuffer.slice(32);
-    const decipher = crypto.createDecipher('aes-256-gcm', key);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
     decipher.setAuthTag(authTag);
     return Buffer.concat([decipher.update(encrypted), decipher.final()]);
   }
 
-  async initDatabase(passphrase) {
+  initDatabase(passphrase) {
     this.key = this.deriveKey(passphrase);
     if (!fs.existsSync(this.dbPath)) {
       // Create empty database
-      const tempDb = new sqlite3.Database(this.tempPath);
-      await new Promise((resolve, reject) => {
-        tempDb.serialize(() => {
-          tempDb.run(SCHEMA, (err) => {
-            if (err) reject(err);
-            else resolve();
-          });
-        });
-      });
+      const tempDb = new Database(this.tempPath);
+      tempDb.exec(SCHEMA);
       tempDb.close();
       // Encrypt
       const data = fs.readFileSync(this.tempPath);
@@ -92,33 +85,21 @@ class Database {
     }
   }
 
-  async openDatabase(passphrase) {
+  openDatabase(passphrase) {
     this.key = this.deriveKey(passphrase);
     if (fs.existsSync(this.dbPath)) {
       const encrypted = fs.readFileSync(this.dbPath);
       const decrypted = this.decryptBuffer(encrypted, this.key);
       fs.writeFileSync(this.tempPath, decrypted);
     }
-    this.db = new sqlite3.Database(this.tempPath);
-    await new Promise((resolve, reject) => {
-      this.db.serialize(() => {
-        this.db.run(SCHEMA, (err) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
-    });
-    await this.initDefaultCategories();
+    this.db = new Database(this.tempPath);
+    this.db.exec(SCHEMA);
+    this.initDefaultCategories();
   }
 
-  async closeDatabase() {
+  closeDatabase() {
     if (this.db) {
-      await new Promise((resolve, reject) => {
-        this.db.close((err) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
+      this.db.close();
       const data = fs.readFileSync(this.tempPath);
       const encrypted = this.encryptBuffer(data, this.key);
       fs.writeFileSync(this.dbPath, encrypted);
@@ -128,23 +109,19 @@ class Database {
   }
 
   // Activity Management
-  async addActivity({ app_name, start_time, end_time, duration, category_id = null }) {
+  addActivity({ app_name, start_time, end_time, duration, category_id = null }) {
     if (category_id === null) {
-      category_id = await this.getCategoryForApp(app_name);
+      category_id = this.getCategoryForApp(app_name);
     }
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        `INSERT INTO activities (app_name, start_time, end_time, duration, category_id) VALUES (?, ?, ?, ?, ?)`,
-        [app_name, start_time, end_time, duration, category_id],
-        function (err) {
-          if (err) reject(err);
-          else resolve(this.lastID);
-        }
-      );
-    });
+    console.log(`[DEBUG] Adding activity: app=${app_name}, start=${start_time}, end=${end_time}, duration=${duration}, category_id=${category_id}`);
+    const stmt = this.db.prepare(
+      `INSERT INTO activities (app_name, start_time, end_time, duration, category_id) VALUES (?, ?, ?, ?, ?)`
+    );
+    const result = stmt.run(app_name, start_time, end_time, duration, category_id);
+    return result.lastInsertRowid;
   }
 
-  async getActivities(filters = {}) {
+  getActivities(filters = {}) {
     let query = 'SELECT * FROM activities';
     const params = [];
     if (filters.category_id) {
@@ -162,74 +139,51 @@ class Database {
       params.push(filters.end_time);
     }
     query += ' ORDER BY start_time DESC';
-    return new Promise((resolve, reject) => {
-      this.db.all(query, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+    const stmt = this.db.prepare(query);
+    return stmt.all(params);
   }
 
-  async updateActivity(id, updates) {
+  updateActivity(id, updates) {
     const fields = Object.keys(updates);
     const values = Object.values(updates);
     const setClause = fields.map((f) => `${f} = ?`).join(', ');
     values.push(id);
-    return new Promise((resolve, reject) => {
-      this.db.run(`UPDATE activities SET ${setClause} WHERE id = ?`, values, function (err) {
-        if (err) reject(err);
-        else resolve(this.changes);
-      });
-    });
+    const stmt = this.db.prepare(`UPDATE activities SET ${setClause} WHERE id = ?`);
+    const result = stmt.run(values);
+    return result.changes;
   }
 
-  async deleteActivity(id) {
-    return new Promise((resolve, reject) => {
-      this.db.run('DELETE FROM activities WHERE id = ?', [id], function (err) {
-        if (err) reject(err);
-        else resolve(this.changes);
-      });
-    });
+  deleteActivity(id) {
+    const stmt = this.db.prepare('DELETE FROM activities WHERE id = ?');
+    const result = stmt.run(id);
+    return result.changes;
   }
 
   // Category Management
-  async addCategory({ name, description }) {
-    return new Promise((resolve, reject) => {
-      this.db.run('INSERT INTO categories (name, description) VALUES (?, ?)', [name, description], function (err) {
-        if (err) reject(err);
-        else resolve(this.lastID);
-      });
-    });
+  addCategory({ name, description }) {
+    const stmt = this.db.prepare('INSERT INTO categories (name, description) VALUES (?, ?)');
+    const result = stmt.run(name, description);
+    return result.lastInsertRowid;
   }
 
-  async getCategories() {
-    return new Promise((resolve, reject) => {
-      this.db.all('SELECT * FROM categories', [], (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+  getCategories() {
+    const stmt = this.db.prepare('SELECT * FROM categories');
+    return stmt.all();
   }
 
-  async updateCategory(id, { name, description }) {
-    return new Promise((resolve, reject) => {
-      this.db.run('UPDATE categories SET name = ?, description = ? WHERE id = ?', [name, description, id], function (err) {
-        if (err) reject(err);
-        else resolve(this.changes);
-      });
-    });
+  updateCategory(id, { name, description }) {
+    const stmt = this.db.prepare('UPDATE categories SET name = ?, description = ? WHERE id = ?');
+    const result = stmt.run(name, description, id);
+    return result.changes;
   }
 
-  async deleteCategory(id) {
-    return new Promise((resolve, reject) => {
-      this.db.run('DELETE FROM categories WHERE id = ?', [id], function (err) {
-        if (err) reject(err);
-        else resolve(this.changes);
-      });
-    });
+  deleteCategory(id) {
+    const stmt = this.db.prepare('DELETE FROM categories WHERE id = ?');
+    const result = stmt.run(id);
+    return result.changes;
   }
 
-  async initDefaultCategories() {
+  initDefaultCategories() {
     const defaults = [
       { name: 'Study', description: 'Educational and productivity applications' },
       { name: 'Entertainment', description: 'Media and leisure applications' },
@@ -239,68 +193,77 @@ class Database {
     ];
     for (const cat of defaults) {
       try {
-        await this.addCategory(cat);
+        this.addCategory(cat);
       } catch (e) {
         // Ignore if already exists, due to UNIQUE constraint
       }
     }
   }
 
-  async getCategoryForApp(appName) {
+  getCategoryForApp(appName) {
     const lowerApp = appName.toLowerCase();
     for (const [category, keywords] of Object.entries(CATEGORY_RULES)) {
       if (keywords.some(keyword => lowerApp.includes(keyword))) {
-        const categories = await this.getCategories();
+        const categories = this.getCategories();
         const cat = categories.find(c => c.name === category);
         if (cat) return cat.id;
       }
     }
     // Default to Other
-    const categories = await this.getCategories();
+    const categories = this.getCategories();
     const other = categories.find(c => c.name === 'Other');
     return other ? other.id : null;
   }
 
-  async applyCategorizationToActivities() {
-    const activities = await this.getActivities();
+  applyCategorizationToActivities() {
+    const activities = this.getActivities();
     for (const activity of activities) {
       if (!activity.category_id) {
-        const category_id = await this.getCategoryForApp(activity.app_name);
-        await this.updateActivity(activity.id, { category_id });
+        const category_id = this.getCategoryForApp(activity.app_name);
+        this.updateActivity(activity.id, { category_id });
       }
     }
   }
 
   // Settings Management
-  async getSetting(key) {
-    return new Promise((resolve, reject) => {
-      this.db.get('SELECT value FROM settings WHERE key = ?', [key], (err, row) => {
-        if (err) reject(err);
-        else resolve(row ? row.value : null);
-      });
-    });
+  getSetting(key) {
+    const stmt = this.db.prepare('SELECT value FROM settings WHERE key = ?');
+    const row = stmt.get(key);
+    return row ? row.value : null;
   }
 
-  async setSetting(key, value) {
-    return new Promise((resolve, reject) => {
-      this.db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [key, value], function (err) {
-        if (err) reject(err);
-        else resolve(this.changes);
-      });
-    });
+  setSetting(key, value) {
+    const stmt = this.db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+    const result = stmt.run(key, value);
+    return result.changes;
+  }
+
+  // SMTP Settings Management
+  getSmtpSettings() {
+    const host = this.getSetting('smtp_host');
+    const port = this.getSetting('smtp_port');
+    const user = this.getSetting('smtp_user');
+    const pass = this.getSetting('smtp_pass');
+    const from = this.getSetting('smtp_from');
+    return { host, port: port ? parseInt(port) : null, user, pass, from };
+  }
+
+  setSmtpSettings({ host, port, user, pass, from }) {
+    this.setSetting('smtp_host', host);
+    this.setSetting('smtp_port', port.toString());
+    this.setSetting('smtp_user', user);
+    this.setSetting('smtp_pass', pass);
+    this.setSetting('smtp_from', from);
   }
 
   // Report Caching
-  async saveReport({ type, data }) {
-    return new Promise((resolve, reject) => {
-      this.db.run('INSERT INTO reports (type, data) VALUES (?, ?)', [type, JSON.stringify(data)], function (err) {
-        if (err) reject(err);
-        else resolve(this.lastID);
-      });
-    });
+  saveReport({ type, data }) {
+    const stmt = this.db.prepare('INSERT INTO reports (type, data) VALUES (?, ?)');
+    const result = stmt.run(type, JSON.stringify(data));
+    return result.lastInsertRowid;
   }
 
-  async getReports(type = null) {
+  getReports(type = null) {
     let query = 'SELECT * FROM reports';
     const params = [];
     if (type) {
@@ -308,21 +271,15 @@ class Database {
       params.push(type);
     }
     query += ' ORDER BY created_at DESC';
-    return new Promise((resolve, reject) => {
-      this.db.all(query, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows.map((r) => ({ ...r, data: JSON.parse(r.data) })));
-      });
-    });
+    const stmt = this.db.prepare(query);
+    const rows = stmt.all(params);
+    return rows.map((r) => ({ ...r, data: JSON.parse(r.data) }));
   }
 
-  async deleteReport(id) {
-    return new Promise((resolve, reject) => {
-      this.db.run('DELETE FROM reports WHERE id = ?', [id], function (err) {
-        if (err) reject(err);
-        else resolve(this.changes);
-      });
-    });
+  deleteReport(id) {
+    const stmt = this.db.prepare('DELETE FROM reports WHERE id = ?');
+    const result = stmt.run(id);
+    return result.changes;
   }
 
   // Encryption/Decryption API
@@ -339,6 +296,55 @@ class Database {
     const decrypted = this.decryptBuffer(encrypted, key);
     fs.writeFileSync(filePath, decrypted);
   }
+
+  // Export Data
+  exportData(format) {
+    if (format === 'json') {
+      const activities = this.getActivities();
+      const categories = this.getCategories();
+      const settings = {};
+      // Get all settings
+      const stmt = this.db.prepare('SELECT key, value FROM settings');
+      const settingRows = stmt.all();
+      settingRows.forEach(row => settings[row.key] = row.value);
+      const data = { activities, categories, settings };
+      return JSON.stringify(data, null, 2);
+    } else if (format === 'pdf') {
+      // For simplicity, return JSON as PDF is not implemented
+      throw new Error('PDF export not implemented');
+    } else {
+      throw new Error('Unsupported format');
+    }
+  }
+
+  // Backup Database
+  backupDatabase(backupPath) {
+    if (fs.existsSync(this.dbPath)) {
+      fs.copyFileSync(this.dbPath, backupPath);
+      return backupPath;
+    } else {
+      throw new Error('Database file not found');
+    }
+  }
+
+  // Restore Database
+  restoreDatabase(backupPath, passphrase) {
+    if (fs.existsSync(backupPath)) {
+      // Close current db
+      this.closeDatabase();
+      // Copy backup
+      fs.copyFileSync(backupPath, this.dbPath);
+      // Reopen
+      this.openDatabase(passphrase);
+    } else {
+      throw new Error('Backup file not found');
+    }
+  }
+
+  // Delete All Data
+  deleteAllData() {
+    this.db.exec('DELETE FROM activities; DELETE FROM reports; DELETE FROM categories; DELETE FROM settings;');
+  }
 }
 
-module.exports = Database;
+module.exports = MyDatabase;

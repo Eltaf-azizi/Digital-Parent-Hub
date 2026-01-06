@@ -4,10 +4,44 @@
   "description": "Digital Parent Hub - Activity Tracking Application",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish=never"
   },
   "dependencies": {
-    "electron": "^25.0.0",
-    "active-win": "^8.2.1"
+    "active-win": "^8.2.1",
+    "better-sqlite3": "^12.5.0",
+    "nodemailer": "^6.9.7",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "recharts": "^3.6.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.0.2",
+    "electron": "20.3.8",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.digitalparent.hub",
+    "productName": "Digital Parent Hub",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**/*",
+      "!build/**/*",
+      "!*.md",
+      "!test_*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }
