@@ -1,4 +1,11 @@
-const { ipcRenderer } = require('electron');
+let ipcRenderer;
+try {
+  ipcRenderer = require('electron').ipcRenderer;
+  console.log('Electron ipcRenderer available');
+} catch (e) {
+  console.log('Electron not available, running in web mode:', e.message);
+  ipcRenderer = null;
+}
 
 class OnboardingWizard extends React.Component {
     constructor(props) {

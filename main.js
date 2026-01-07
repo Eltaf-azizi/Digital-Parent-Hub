@@ -1,4 +1,9 @@
-const { app, BrowserWindow, ipcMain, Notification, dialog } = require('electron');
+try {
+  var { app, BrowserWindow, ipcMain, Notification, dialog } = require('electron');
+} catch (e) {
+  console.error('This script must be run with Electron. Use "npm start" instead.');
+  process.exit(1);
+}
 console.log('App object:', app);
 const activeWin = require('active-win');
 const Database = require('./src/data/database');

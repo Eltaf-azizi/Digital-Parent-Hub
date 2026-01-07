@@ -1,4 +1,3 @@
-const { ipcRenderer } = require('electron');
 const ParentDashboard = require('./ParentDashboard');
 const ChildDashboard = require('./ChildDashboard');
 const OnboardingWizard = require('./OnboardingWizard');
@@ -19,7 +18,8 @@ class App extends React.Component {
     }
 
     async componentDidMount() {
-        const onboardingCompleted = await ipcRenderer.invoke('get-onboarding-completed');
+        const response = await fetch('/api/get-onboarding-completed');
+        const onboardingCompleted = await response.json();
         if (!onboardingCompleted) {
             this.setState({ checkingOnboarding: false });
             return;
@@ -30,8 +30,9 @@ class App extends React.Component {
 
     fetchData = async () => {
         try {
-            const ipcCall = this.state.view === 'child' ? 'get-child-data' : 'get-parent-data';
-            const data = await ipcRenderer.invoke(ipcCall);
+            const apiCall = this.state.view === 'child' ? '/api/get-child-data' : '/api/get-parent-data';
+            const response = await fetch(apiCall);
+            const data = await response.json();
             this.setState({ data, loading: false });
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -49,7 +50,12 @@ class App extends React.Component {
 
     handleLogin = async () => {
         try {
-            const isValid = await ipcRenderer.invoke('verify-parent-pin', this.state.pin);
+            const response = await fetch('/api/verify-parent-pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: this.state.pin })
+            });
+            const isValid = await response.json();
             if (isValid) {
                 this.setState({ view: 'parent', showLoginModal: false, pin: '', pinError: '' }, () => this.fetchData());
             } else {
