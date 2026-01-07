@@ -134,3 +134,64 @@ app.get('/api/get-child-data', (req, res) => {
   }
 });
 
+app.get('/api/get-parent-data', (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const activities = db.getActivities({
+      start_time: today.toISOString(),
+      end_time: tomorrow.toISOString()
+    });
+
+    const totalTime = activities.reduce((sum, act) => sum + act.duration, 0);
+
+    const categories = db.getCategories();
+    const categoryMap = {};
+    categories.forEach(cat => categoryMap[cat.id] = cat.name);
+
+    const categoryTimes = {};
+    activities.forEach(act => {
+      const catName = categoryMap[act.category_id] || 'Other';
+      categoryTimes[catName] = (categoryTimes[catName] || 0) + act.duration;
+    });
+
+    const categoryData = Object.entries(categoryTimes).map(([name, time]) => ({ name, time }));
+
+    const studyTime = categoryTimes['Study'] || 0;
+    const productivityScore = totalTime > 0 ? Math.round((studyTime / totalTime) * 100) : 0;
+
+    let insights = 'Keep up the good work!';
+    if (productivityScore > 70) {
+      insights = 'Excellent! You\'re spending a great deal of time on productive activities.';
+    } else if (productivityScore > 40) {
+      insights = 'Good balance! Consider increasing study time for even better productivity.';
+    } else {
+      insights = 'Let\'s focus more on study activities to boost your productivity.';
+    }
+
+    const cachedReports = db.getReports();
+
+    const alerts = [];
+    if (totalTime > 28800) {
+      alerts.push('High screen time today! Consider taking a break.');
+    }
+
+    res.json({ totalTime, categories: categoryData, productivityScore, insights, reports: cachedReports, alerts, categoriesList: categories });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/verify-parent-pin', (req, res) => {
+  try {
+    const { pin } = req.body;
+    const storedPin = db.getSetting('parent_pin');
+    res.json(storedPin === pin);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
