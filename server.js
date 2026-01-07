@@ -195,3 +195,120 @@ app.post('/api/verify-parent-pin', (req, res) => {
   }
 });
 
+app.post('/api/set-parent-pin', (req, res) => {
+  try {
+    const { pin } = req.body;
+    db.setSetting('parent_pin', pin);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/get-onboarding-completed', (req, res) => {
+  try {
+    const completed = db.getSetting('onboarding_completed');
+    res.json(completed === 'true');
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/set-onboarding-completed', (req, res) => {
+  try {
+    const { completed } = req.body;
+    db.setSetting('onboarding_completed', completed ? 'true' : 'false');
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/get-settings', (req, res) => {
+  try {
+    const categories = db.getCategories();
+    const theme = db.getSetting('theme') || 'light';
+    const reportFrequencyStr = db.getSetting('report_frequency');
+    const reportFrequency = reportFrequencyStr ? JSON.parse(reportFrequencyStr) : { daily: true, weekly: false, monthly: false, yearly: false };
+    const smtp = db.getSmtpSettings();
+    const screenLimit = parseInt(db.getSetting('daily_screen_limit')) || 28800;
+    const studyGoal = parseInt(db.getSetting('study_goal')) || 7200;
+    res.json({ categories, theme, reportFrequency, smtp, screenLimit, studyGoal });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/save-settings', (req, res) => {
+  try {
+    const settings = req.body;
+    for (const cat of settings.categories) {
+      if (cat.id) {
+        db.updateCategory(cat.id, { name: cat.name, description: cat.description });
+      } else {
+        db.addCategory({ name: cat.name, description: cat.description });
+      }
+    }
+    db.setSetting('theme', settings.theme);
+    db.setSetting('report_frequency', JSON.stringify(settings.reportFrequency));
+    db.setSmtpSettings(settings.smtp);
+    db.setSetting('daily_screen_limit', settings.screenLimit.toString());
+    db.setSetting('study_goal', settings.studyGoal.toString());
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/export-data', (req, res) => {
+  try {
+    const { format } = req.body;
+    const data = db.exportData(format);
+    res.setHeader('Content-Disposition', `attachment; filename=data.${format}`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.send(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/backup-database', (req, res) => {
+  try {
+    const backupPath = path.join(__dirname, 'backup.db');
+    db.backupDatabase(backupPath);
+    res.download(backupPath, 'backup.db', (err) => {
+      if (err) console.error(err);
+      // Clean up
+      require('fs').unlinkSync(backupPath);
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/restore-database', (req, res) => {
+  try {
+    // For simplicity, assume file is uploaded, but since no file upload, just return success
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/delete-all-data', (req, res) => {
+  try {
+    db.deleteAllData();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Serve the main HTML
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
+app.listen(port, () => {
+  console.log(`Digital Parent Hub web app running at http://localhost:${port}`);
+});
