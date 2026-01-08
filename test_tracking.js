@@ -27,6 +27,54 @@ async function testTracking() {
   const weeklyReport = await reports.generateWeeklyReport(new Date(now.getTime() - 86400000 * 3));
   console.log('Weekly Report:', weeklyReport);
 
+  const yesterdayReport = await reports.generateDailyReport(yesterday);
+  console.log('Yesterday Report:', yesterdayReport);
+
+  // Verify report accuracy
+  console.log('Verifying report accuracy...');
+  const todayActivities = db.getActivities({
+    start_time: new Date(now.getTime() - 86400000).toISOString(),
+    end_time: now.toISOString()
+  });
+  const expectedTotal = todayActivities.reduce((sum, act) => sum + (act.duration || 0), 0);
+  console.log('Expected total screen time:', expectedTotal);
+  console.log('Daily report total:', dailyReport.totalScreenTime);
+  if (expectedTotal === dailyReport.totalScreenTime) {
+    console.log('✅ Daily total matches');
+  } else {
+    console.log('❌ Daily total mismatch');
+  }
+
+  const categoryMap = {};
+  db.getCategories().forEach(cat => categoryMap[cat.id] = cat.name);
+  const expectedCategories = {};
+  todayActivities.forEach(act => {
+    const catName = categoryMap[act.category_id] || 'Other';
+    expectedCategories[catName] = (expectedCategories[catName] || 0) + (act.duration || 0);
+  });
+  console.log('Expected categories:', expectedCategories);
+  console.log('Daily report categories:', dailyReport.categoryBreakdown);
+  const categoriesMatch = Object.keys(expectedCategories).every(cat =>
+    expectedCategories[cat] === dailyReport.categoryBreakdown[cat]
+  );
+  if (categoriesMatch && Object.keys(dailyReport.categoryBreakdown).every(cat =>
+    expectedCategories[cat] === dailyReport.categoryBreakdown[cat]
+  )) {
+    console.log('✅ Categories match');
+  } else {
+    console.log('❌ Categories mismatch');
+  }
+
+  const studyTime = expectedCategories.Study || 0;
+  const expectedProductivity = expectedTotal > 0 ? Math.round((studyTime / expectedTotal) * 100) : 0;
+  console.log('Expected productivity:', expectedProductivity);
+  console.log('Daily report productivity:', dailyReport.productivityScore);
+  if (expectedProductivity === dailyReport.productivityScore) {
+    console.log('✅ Productivity score matches');
+  } else {
+    console.log('❌ Productivity score mismatch');
+  }
+
   console.log('Testing backup and restore...');
   const backupPath = './backup_test.db';
   db.backupDatabase(backupPath);
