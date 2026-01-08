@@ -5,6 +5,7 @@ try {
   process.exit(1);
 }
 console.log('App object:', app);
+require('dotenv').config();
 const activeWin = require('active-win');
 const Database = require('./src/data/database');
 const Reports = require('./src/reports/reports');
@@ -16,15 +17,15 @@ let reports;
 let emailService;
 let currentActivity = null;
 let otherCategoryId;
-const passphrase = 'digitalparent'; // Default passphrase for demo
+const passphrase = process.env.DATABASE_PASSPHRASE || 'digitalparent';
 
 async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
-    show: true, // Show for testing
     webPreferences: {
-      nodeIntegration: true
+      nodeIntegration: true,
+      contextIsolation: false
     }
   });
 
@@ -406,13 +407,16 @@ app.on('window-all-closed', () => {
   if (currentActivity) {
     const endTime = new Date().toISOString();
     const duration = Math.floor((new Date(endTime) - new Date(currentActivity.start_time)) / 1000);
-    db.addActivity({
-      app_name: currentActivity.app_name,
-      start_time: currentActivity.start_time,
-      end_time: endTime,
-      duration,
-      category_id: currentActivity.category_id
-    });
+    // Validate duration: positive and reasonable (less than 8 hours to avoid sleep inflation)
+    if (duration > 0 && duration < 28800) {
+      db.addActivity({
+        app_name: currentActivity.app_name,
+        start_time: currentActivity.start_time,
+        end_time: endTime,
+        duration,
+        category_id: currentActivity.category_id
+      });
+    }
   }
   db.closeDatabase();
   app.quit();

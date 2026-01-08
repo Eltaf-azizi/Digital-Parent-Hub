@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const MyDatabase = require('./src/data/database');
@@ -6,7 +7,7 @@ const EmailService = require('./src/email/emailService');
 
 const app = express();
 const port = 3000;
-const passphrase = 'digitalparent'; // Default passphrase
+const passphrase = process.env.DATABASE_PASSPHRASE || 'digitalparent';
 
 // Initialize database, reports, email
 const db = new MyDatabase();

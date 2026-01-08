@@ -113,7 +113,6 @@ class MyDatabase {
     if (category_id === null) {
       category_id = this.getCategoryForApp(app_name);
     }
-    console.log(`[DEBUG] Adding activity: app=${app_name}, start=${start_time}, end=${end_time}, duration=${duration}, category_id=${category_id}`);
     const stmt = this.db.prepare(
       `INSERT INTO activities (app_name, start_time, end_time, duration, category_id) VALUES (?, ?, ?, ?, ?)`
     );
