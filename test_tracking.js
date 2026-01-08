@@ -3,8 +3,9 @@ const Reports = require('./src/reports/reports');
 
 async function testTracking() {
   const db = new Database();
-  await db.initDatabase('testpass');
-  await db.openDatabase('testpass');
+  const passphrase = process.env.DATABASE_PASSPHRASE || 'testpass';
+  await db.initDatabase(passphrase);
+  await db.openDatabase(passphrase);
 
   // Simulate activities
   const now = new Date();
@@ -26,7 +27,28 @@ async function testTracking() {
   const weeklyReport = await reports.generateWeeklyReport(new Date(now.getTime() - 86400000 * 3));
   console.log('Weekly Report:', weeklyReport);
 
+  console.log('Testing backup and restore...');
+  const backupPath = './backup_test.db';
+  db.backupDatabase(backupPath);
+  console.log('Backup created at', backupPath);
+
+  db.closeDatabase();
+
+  db.restoreDatabase(backupPath, passphrase);
+  db.openDatabase(passphrase);
+  console.log('Restore completed');
+
+  // Verify data integrity
+  const restoredActivities = db.getActivities();
+  console.log('Activities after restore:', restoredActivities.length);
+  const restoredCategories = db.getCategories();
+  console.log('Categories after restore:', restoredCategories.length);
+
   await db.closeDatabase();
+
+  // Clean up
+  require('fs').unlinkSync(backupPath);
+  console.log('Backup test passed');
 }
 
 testTracking().catch(console.error);
