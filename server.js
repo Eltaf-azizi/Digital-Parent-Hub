@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const session = require('express-session');
 const path = require('path');
 const MyDatabase = require('./src/data/database');
 const Reports = require('./src/reports/reports');
@@ -135,7 +136,7 @@ app.get('/api/get-child-data', (req, res) => {
   }
 });
 
-app.get('/api/get-parent-data', (req, res) => {
+app.get('/api/get-parent-data', requireAuth, (req, res) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -196,7 +197,7 @@ app.post('/api/verify-parent-pin', (req, res) => {
   }
 });
 
-app.post('/api/set-parent-pin', (req, res) => {
+app.post('/api/set-parent-pin', requireAuth, (req, res) => {
   try {
     const { pin } = req.body;
     db.setSetting('parent_pin', pin);
@@ -204,6 +205,16 @@ app.post('/api/set-parent-pin', (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+app.post('/api/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      res.status(500).json({ error: 'Logout failed' });
+    } else {
+      res.json({ success: true });
+    }
+  });
 });
 
 app.get('/api/get-onboarding-completed', (req, res) => {
@@ -225,7 +236,7 @@ app.post('/api/set-onboarding-completed', (req, res) => {
   }
 });
 
-app.get('/api/get-settings', (req, res) => {
+app.get('/api/get-settings', requireAuth, (req, res) => {
   try {
     const categories = db.getCategories();
     const theme = db.getSetting('theme') || 'light';
@@ -240,7 +251,7 @@ app.get('/api/get-settings', (req, res) => {
   }
 });
 
-app.post('/api/save-settings', (req, res) => {
+app.post('/api/save-settings', requireAuth, (req, res) => {
   try {
     const settings = req.body;
     for (const cat of settings.categories) {
@@ -261,7 +272,7 @@ app.post('/api/save-settings', (req, res) => {
   }
 });
 
-app.post('/api/export-data', (req, res) => {
+app.post('/api/export-data', requireAuth, (req, res) => {
   try {
     const { format } = req.body;
     const data = db.exportData(format);
@@ -273,7 +284,7 @@ app.post('/api/export-data', (req, res) => {
   }
 });
 
-app.post('/api/backup-database', (req, res) => {
+app.post('/api/backup-database', requireAuth, (req, res) => {
   try {
     const backupPath = path.join(__dirname, 'backup.db');
     db.backupDatabase(backupPath);
@@ -287,7 +298,7 @@ app.post('/api/backup-database', (req, res) => {
   }
 });
 
-app.post('/api/restore-database', (req, res) => {
+app.post('/api/restore-database', requireAuth, (req, res) => {
   try {
     // For simplicity, assume file is uploaded, but since no file upload, just return success
     res.json({ success: true });
@@ -296,7 +307,7 @@ app.post('/api/restore-database', (req, res) => {
   }
 });
 
-app.post('/api/delete-all-data', (req, res) => {
+app.post('/api/delete-all-data', requireAuth, (req, res) => {
   try {
     db.deleteAllData();
     res.json({ success: true });
