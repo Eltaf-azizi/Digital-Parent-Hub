@@ -22,9 +22,9 @@ class OnboardingWizard extends React.Component {
         {
             title: 'Welcome to Digital Parent Hub',
             content: React.createElement('div', { className: 'text-center' },
-                React.createElement('h2', null, 'Welcome!'),
-                React.createElement('p', null, 'Digital Parent Hub is a privacy-first digital well-being app designed to help families monitor and encourage healthy screen time habits.'),
-                React.createElement('p', null, 'Let\'s get you set up in just a few steps.')
+              React.createElement('h2', null, 'Welcome to Your Family\'s Digital Well-being Journey!'),
+              React.createElement('p', null, 'Digital Parent Hub is designed to help families monitor and encourage healthy screen time habits in a safe, private way.'),
+              React.createElement('p', null, 'Let\'s set this up together in just a few simple steps.')
             )
         },
         {
@@ -74,8 +74,8 @@ class OnboardingWizard extends React.Component {
         {
             title: 'Set Parent PIN',
             content: React.createElement('div', { className: 'text-center' },
-                React.createElement('h3', null, 'Set a Parent PIN'),
-                React.createElement('p', null, 'Create a 4-digit PIN to secure parent access to settings and reports.'),
+                React.createElement('h3', null, 'Create a Secure Parent PIN'),
+                React.createElement('p', null, 'This PIN will keep your parent settings safe. Choose 4 digits that are easy for you to remember.'),
                 React.createElement('div', { className: 'form-group' },
                     React.createElement('input', {
                         type: 'password',
@@ -102,9 +102,9 @@ class OnboardingWizard extends React.Component {
         {
             title: 'Setup Complete!',
             content: React.createElement('div', { className: 'text-center' },
-                React.createElement('h2', null, 'All Set!'),
-                React.createElement('p', null, 'Your Digital Parent Hub is now ready to help monitor and encourage healthy digital habits.'),
-                React.createElement('p', null, 'Remember: privacy-first, family-focused, and designed for digital well-being.')
+                React.createElement('h2', null, 'You\'re All Set!'),
+                React.createElement('p', null, 'Your Digital Parent Hub is now ready to help your family thrive in the digital world.'),
+                React.createElement('p', null, 'Remember: your privacy is protected, and we're here to support positive habits.')
             )
         }
     ];

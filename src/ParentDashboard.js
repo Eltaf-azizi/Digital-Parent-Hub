@@ -86,7 +86,7 @@ class ParentDashboard extends React.Component {
             // Alerts
             React.createElement('div', { className: 'card' },
                 React.createElement('div', { className: 'card-header' },
-                    React.createElement('h2', { className: 'card-title' }, 'Alerts')
+                    React.createElement('h2', { className: 'card-title' }, 'Notifications')
                 ),
                 React.createElement('div', { className: 'card-content' },
                     alerts.length > 0 ? alerts.map((alert, index) => React.createElement('div', { key: index, className: 'alert alert-danger' }, alert)) : React.createElement('p', null, 'No alerts')
