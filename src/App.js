@@ -13,7 +13,9 @@ class App extends React.Component {
             pin: '',
             pinError: '',
             onboardingCompleted: false,
-            checkingOnboarding: true
+            checkingOnboarding: true,
+            parentSession: false,
+            sessionTimeout: null
         };
     }
 
@@ -41,11 +43,21 @@ class App extends React.Component {
     };
 
     handleSwitchToParent = () => {
-        this.setState({ showLoginModal: true });
+        if (this.state.parentSession) {
+            this.setState({ view: 'parent' }, () => this.fetchData());
+        } else {
+            this.setState({ showLoginModal: true });
+        }
     };
 
     handleSwitchToChild = () => {
-        this.setState({ view: 'child', showLoginModal: false }, () => this.fetchData());
+        this.setState({ view: 'child', parentSession: false }, () => {
+            if (this.state.sessionTimeout) {
+                clearTimeout(this.state.sessionTimeout);
+                this.setState({ sessionTimeout: null });
+            }
+            this.fetchData();
+        });
     };
 
     handleLogin = async () => {
@@ -57,7 +69,12 @@ class App extends React.Component {
             });
             const isValid = await response.json();
             if (isValid) {
-                this.setState({ view: 'parent', showLoginModal: false, pin: '', pinError: '' }, () => this.fetchData());
+                this.setState({ view: 'parent', showLoginModal: false, pin: '', pinError: '', parentSession: true }, () => this.fetchData());
+                if (this.state.sessionTimeout) clearTimeout(this.state.sessionTimeout);
+                const timeout = setTimeout(() => {
+                    this.setState({ parentSession: false, view: 'child' });
+                }, 30 * 60 * 1000);
+                this.setState({ sessionTimeout: timeout });
             } else {
                 this.setState({ pinError: 'Invalid PIN' });
             }
