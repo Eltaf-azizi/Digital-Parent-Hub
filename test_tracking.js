@@ -27,6 +27,7 @@ async function testTracking() {
   const weeklyReport = await reports.generateWeeklyReport(new Date(now.getTime() - 86400000 * 3));
   console.log('Weekly Report:', weeklyReport);
 
+  const yesterday = new Date(now.getTime() - 86400000);
   const yesterdayReport = await reports.generateDailyReport(yesterday);
   console.log('Yesterday Report:', yesterdayReport);
 
@@ -97,6 +98,31 @@ async function testTracking() {
   // Clean up
   require('fs').unlinkSync(backupPath);
   console.log('Backup test passed');
+
+  // Stress test: add many activities
+  console.log('Starting stress test...');
+  db.openDatabase(passphrase);
+  const stressStart = Date.now();
+  for (let i = 0; i < 100; i++) {
+    await db.addActivity({
+      app_name: `stress_app_${i}`,
+      start_time: new Date(now.getTime() - i * 60000).toISOString(),
+      end_time: new Date(now.getTime() - (i - 1) * 60000).toISOString(),
+      duration: 60
+    });
+  }
+  const stressEnd = Date.now();
+  console.log(`Stress test completed in ${stressEnd - stressStart}ms`);
+
+  const allActivities = db.getActivities();
+  console.log('Total activities after stress test:', allActivities.length);
+  if (allActivities.length >= 103) { // 3 original + 100 stress
+    console.log('✅ Stress test passed');
+  } else {
+    console.log('❌ Stress test failed');
+  }
+
+  await db.closeDatabase();
 }
 
 testTracking().catch(console.error);

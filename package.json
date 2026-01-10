@@ -4,7 +4,7 @@
   "description": "Digital Parent Hub - Activity Tracking Application",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "npx electron .",
     "server": "node server.js",
     "build": "electron-builder",
     "dist": "electron-builder --publish=never"

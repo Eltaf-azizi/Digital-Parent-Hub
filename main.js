@@ -1,5 +1,10 @@
 try {
-  var { app, BrowserWindow, ipcMain, Notification, dialog } = require('electron');
+  const electron = require('electron');
+  var app = electron.app;
+  var BrowserWindow = electron.BrowserWindow;
+  var ipcMain = electron.ipcMain;
+  var Notification = electron.Notification;
+  var dialog = electron.dialog;
 } catch (e) {
   console.error('This script must be run with Electron. Use "npm start" instead.');
   process.exit(1);
