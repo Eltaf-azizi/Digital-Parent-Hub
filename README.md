@@ -24,3 +24,97 @@ A privacy-first desktop application that helps families monitor and encourage he
 - **No Content Monitoring**: Never tracks what you're viewing, typing, or communicating
 - **Transparent Tracking**: Clear explanation of what is and isn't tracked
 
+## 📋 Requirements
+
+- **Operating System**: Windows 10+, macOS 10.14+, Linux (Ubuntu 18.04+)
+- **Node.js**: v16.0.0 or higher
+- **Build Tools**: Visual Studio Build Tools (Windows) or Xcode (macOS) for native dependencies
+
+## 🛠️ Installation
+
+### From Source
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/digital-parent-hub.git
+   cd digital-parent-hub
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Build native dependencies** (if needed)
+   ```bash
+   # For Windows
+   npm rebuild better-sqlite3
+
+   # For macOS/Linux
+   npm run postinstall
+   ```
+
+4. **Run the application**
+   ```bash
+   npm start
+   ```
+
+### From Pre-built Binaries
+
+Download the latest release from the [Releases](https://github.com/yourusername/digital-parent-hub/releases) page.
+
+- **Windows**: Download `Digital-Parent-Hub-Setup-X.X.X.exe`
+- **macOS**: Download `Digital-Parent-Hub-X.X.X.dmg`
+- **Linux**: Download `Digital-Parent-Hub-X.X.X.AppImage`
+
+## 🚀 Usage
+
+### First Time Setup
+
+1. Launch the application
+2. Complete the onboarding wizard
+3. Set a parent PIN for secure access
+4. Review and accept the privacy policy
+
+### Daily Usage
+
+- **Child View**: Automatically displayed, shows current stats and tips
+- **Parent Access**: Click "Parent Access" and enter PIN to view detailed analytics
+- **Settings**: Configure categories, alerts, email reports, and themes
+
+### Key Features
+
+- **Activity Tracking**: Automatically monitors active applications
+- **Category Assignment**: Apps are grouped into customizable categories
+- **Report Generation**: Daily and weekly summaries with productivity scores
+- **Data Management**: Export, backup, and delete data as needed
+
+## 🔒 Privacy Policy
+
+Digital Parent Hub is committed to protecting your privacy. We collect only the minimum data necessary to provide digital well-being insights.
+
+### What We Track
+- Application names and categories
+- Duration of usage for each application
+- Basic system information for functionality
+
+### What We Never Track
+- Screen content or what you're viewing
+- Keystrokes or typing activity
+- Messages, emails, or any communication content
+- Websites visited (beyond browser application)
+- Files accessed or their contents
+- Any private or personal information
+
+### Data Security
+- All data is stored locally on your device
+- Database is encrypted using industry-standard encryption
+- Access to parent features requires a PIN
+- You have full control over your data
+
+### Your Rights
+- Export or backup all your data at any time
+- Delete all data permanently
+- Access privacy policy within the app during onboarding
+
+
