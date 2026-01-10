@@ -118,3 +118,42 @@ Digital Parent Hub is committed to protecting your privacy. We collect only the 
 - Access privacy policy within the app during onboarding
 
 
+## 🏗️ Development
+
+### Project Structure
+```
+Digital-Parent-Hub/
+├── main.js                 # Electron main process
+├── server.js               # Express server for API
+├── src/
+│   ├── App.js             # React main component
+│   ├── ChildDashboard.js  # Child view
+│   ├── ParentDashboard.js # Parent analytics
+│   ├── OnboardingWizard.js # Setup wizard
+│   ├── Settings.js        # Configuration
+│   ├── data/database.js   # Database operations
+│   ├── reports/reports.js # Report generation
+│   └── styles.css         # Styling
+├── test_*.js              # Test files
+└── package.json
+```
+
+### Running Tests
+```bash
+# Note: Some tests require native dependencies to be built
+npm test  # Run all tests
+node test_simple.js      # Basic database tests
+node test_tracking.js    # Tracking and reports
+node test_encryption.js  # Encryption tests
+```
+
+### Building for Distribution
+```bash
+# Build for current platform
+npm run dist
+
+# Build for all platforms (requires appropriate build environment)
+npm run build
+```
+
+
