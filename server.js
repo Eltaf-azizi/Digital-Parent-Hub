@@ -20,6 +20,12 @@ const emailService = new EmailService(db, reports);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Simple auth middleware
+function requireAuth(req, res, next) {
+  // For demo, skip auth
+  next();
+}
+
 // API routes
 app.get('/api/get-dashboard-data', (req, res) => {
   try {
