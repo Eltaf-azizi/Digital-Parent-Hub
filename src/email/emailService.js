@@ -8,18 +8,18 @@ class EmailService {
   }
 
   async initTransporter() {
-    const smtpSettings = await this.db.getSmtpSettings();
-    if (!smtpSettings.host || !smtpSettings.port || !smtpSettings.user || !smtpSettings.pass || !smtpSettings.from) {
+    const smtpSettings = this.db.getSmtpSettings();
+    if (!smtpSettings || !smtpSettings.host || !smtpSettings.port || !smtpSettings.user || !smtpSettings.pass || !smtpSettings.from) {
       throw new Error('SMTP settings are not fully configured');
     }
-    this.transporter = nodemailer.createTransporter({
+    this.transporter = nodemailer.createTransport({
       host: smtpSettings.host,
       port: smtpSettings.port,
-      secure: smtpSettings.port === 465, // true for 465, false for other ports
+      secure: Number(smtpSettings.port) === 465,
       auth: {
         user: smtpSettings.user,
-        pass: smtpSettings.pass,
-      },
+        pass: smtpSettings.pass
+      }
     });
   }
 

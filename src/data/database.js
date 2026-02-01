@@ -41,6 +41,7 @@ class MyDatabase {
       { id: 4, name: 'Browsing', description: 'Web browsing' },
       { id: 5, name: 'Other', description: 'Uncategorized activities' }
     ];
+  
   }
 
   encryptBuffer(buffer) {

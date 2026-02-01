@@ -18,7 +18,7 @@ const reports = new Reports(db);
 const emailService = new EmailService(db, reports);
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'src/public')));
 
 // Simple auth middleware
 function requireAuth(req, res, next) {
@@ -324,7 +324,7 @@ app.post('/api/delete-all-data', requireAuth, (req, res) => {
 
 // Serve the main HTML
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/index.html'));
+  res.sendFile(path.join(__dirname, 'src/public/index.html'));
 });
 
 app.listen(port, () => {

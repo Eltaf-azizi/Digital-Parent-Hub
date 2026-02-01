@@ -308,6 +308,57 @@ async function createWindow() {
   // Start alert checker
   checkAlerts();
   setInterval(checkAlerts, 5 * 60 * 1000); // Check every 5 minutes
+
+  // Schedule report generation based on settings (generate now, then run periodically)
+  scheduleReports();
+}
+
+function scheduleReports() {
+  try {
+    const freqStr = db.getSetting('report_frequency');
+    const freq = freqStr ? JSON.parse(freqStr) : { daily: true, weekly: false, monthly: false, yearly: false };
+
+    // Helper to generate and store a report
+    const genAndStore = async (type, date) => {
+      try {
+        let report;
+        switch (type) {
+          case 'daily':
+            report = await reports.generateDailyReport(date);
+            break;
+          case 'weekly':
+            report = await reports.generateWeeklyReport(date);
+            break;
+          case 'monthly':
+            report = await reports.generateMonthlyReport(date);
+            break;
+          case 'yearly':
+            report = await reports.generateYearlyReport(date);
+            break;
+        }
+        if (report) {
+          db.addReport(type, report);
+        }
+      } catch (err) {
+        console.error('Error generating report:', err);
+      }
+    };
+
+    const now = new Date();
+    // Generate immediately for enabled frequencies
+    if (freq.daily) genAndStore('daily', now);
+    if (freq.weekly) genAndStore('weekly', now);
+    if (freq.monthly) genAndStore('monthly', now);
+    if (freq.yearly) genAndStore('yearly', now);
+
+    // Schedule periodic generation: daily at 00:00 (approx)
+    if (freq.daily) setInterval(() => genAndStore('daily', new Date()), 24 * 60 * 60 * 1000);
+    if (freq.weekly) setInterval(() => genAndStore('weekly', new Date()), 7 * 24 * 60 * 60 * 1000);
+    if (freq.monthly) setInterval(() => genAndStore('monthly', new Date()), 30 * 24 * 60 * 60 * 1000);
+    if (freq.yearly) setInterval(() => genAndStore('yearly', new Date()), 365 * 24 * 60 * 60 * 1000);
+  } catch (err) {
+    console.error('Error scheduling reports:', err);
+  }
 }
 
 function startActivityTracking() {

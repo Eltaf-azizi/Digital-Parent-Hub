@@ -7,65 +7,70 @@ class Reports {
 
   // Helper to get date range for different report types
   getDateRange(type, startDate) {
-    const start = new Date(startDate);
+    const s = new Date(startDate);
+    let start;
     let end;
 
     switch (type) {
       case 'daily':
+        start = new Date(s.getFullYear(), s.getMonth(), s.getDate(), 0, 0, 0);
         end = new Date(start);
-        end.setDate(start.getDate() + 1);
+        end.setDate(end.getDate() + 1);
         break;
       case 'weekly':
+        // assume week starts on the provided date
+        start = new Date(s.getFullYear(), s.getMonth(), s.getDate(), 0, 0, 0);
         end = new Date(start);
-        end.setDate(start.getDate() + 7);
+        end.setDate(end.getDate() + 7);
         break;
       case 'monthly':
-        end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+        start = new Date(s.getFullYear(), s.getMonth(), 1, 0, 0, 0);
+        end = new Date(s.getFullYear(), s.getMonth() + 1, 1, 0, 0, 0);
         break;
       case 'yearly':
-        end = new Date(start.getFullYear() + 1, 0, 1);
+        start = new Date(s.getFullYear(), 0, 1, 0, 0, 0);
+        end = new Date(s.getFullYear() + 1, 0, 1, 0, 0, 0);
         break;
       default:
         throw new Error('Invalid report type');
     }
 
     return {
-      start: start.toISOString().split('T')[0] + ' 00:00:00',
-      end: end.toISOString().split('T')[0] + ' 00:00:00'
+      start: start.toISOString(),
+      end: end.toISOString()
     };
   }
 
   // Get previous period date range for trends
   getPreviousDateRange(type, startDate) {
-    const start = new Date(startDate);
-    let prevStart, prevEnd;
+    const s = new Date(startDate);
+    let prevStart;
+    let prevEnd;
 
     switch (type) {
       case 'daily':
-        prevStart = new Date(start);
-        prevStart.setDate(start.getDate() - 1);
+        prevStart = new Date(s.getFullYear(), s.getMonth(), s.getDate() - 1, 0, 0, 0);
         prevEnd = new Date(prevStart);
-        prevEnd.setDate(prevStart.getDate() + 1);
+        prevEnd.setDate(prevEnd.getDate() + 1);
         break;
       case 'weekly':
-        prevStart = new Date(start);
-        prevStart.setDate(start.getDate() - 7);
+        prevStart = new Date(s.getFullYear(), s.getMonth(), s.getDate() - 7, 0, 0, 0);
         prevEnd = new Date(prevStart);
-        prevEnd.setDate(prevStart.getDate() + 7);
+        prevEnd.setDate(prevEnd.getDate() + 7);
         break;
       case 'monthly':
-        prevStart = new Date(start.getFullYear(), start.getMonth() - 1, start.getDate());
-        prevEnd = new Date(start.getFullYear(), start.getMonth(), 1);
+        prevStart = new Date(s.getFullYear(), s.getMonth() - 1, 1, 0, 0, 0);
+        prevEnd = new Date(s.getFullYear(), s.getMonth(), 1, 0, 0, 0);
         break;
       case 'yearly':
-        prevStart = new Date(start.getFullYear() - 1, start.getMonth(), start.getDate());
-        prevEnd = new Date(start.getFullYear(), 0, 1);
+        prevStart = new Date(s.getFullYear() - 1, 0, 1, 0, 0, 0);
+        prevEnd = new Date(s.getFullYear(), 0, 1, 0, 0, 0);
         break;
     }
 
     return {
-      start: prevStart.toISOString().split('T')[0] + ' 00:00:00',
-      end: prevEnd.toISOString().split('T')[0] + ' 00:00:00'
+      start: prevStart.toISOString(),
+      end: prevEnd.toISOString()
     };
   }
 
