@@ -41,7 +41,45 @@ class MyDatabase {
       { id: 4, name: 'Browsing', description: 'Web browsing' },
       { id: 5, name: 'Other', description: 'Uncategorized activities' }
     ];
-  
+    // default settings
+    this.data.settings = this.data.settings || {};
+    if (!this.data.settings.parent_pin) this.data.settings.parent_pin = '1234';
+    if (!this.data.settings.onboarding_completed) this.data.settings.onboarding_completed = 'true';
+    if (!this.data.settings.report_frequency) this.data.settings.report_frequency = JSON.stringify({ daily: true, weekly: true, monthly: true, yearly: false });
+    if (!this.data.settings.daily_screen_limit) this.data.settings.daily_screen_limit = '28800';
+    if (!this.data.settings.study_goal) this.data.settings.study_goal = '7200';
+
+    // seed some sample activities for recent days
+    this.data.activities = this.data.activities || [];
+    if (this.data.activities.length === 0) {
+      const now = new Date();
+      let id = 1;
+      for (let d = 0; d < 12; d++) {
+        const day = new Date(now);
+        day.setDate(now.getDate() - d);
+
+        // add a Study session (VSCode) in afternoon
+        const studyStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 15, 0, 0);
+        const studyEnd = new Date(studyStart);
+        studyEnd.setMinutes(studyEnd.getMinutes() + 90 - (d * 2));
+        const studyDuration = Math.max(1800, Math.floor((studyEnd - studyStart) / 1000));
+        this.data.activities.push({ id: id++, app_name: 'VSCode', start_time: studyStart.toISOString(), end_time: studyEnd.toISOString(), duration: studyDuration, category_id: 1 });
+
+        // add an Entertainment session (YouTube) in evening
+        const entStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 19, 30, 0);
+        const entEnd = new Date(entStart);
+        entEnd.setMinutes(entEnd.getMinutes() + 45 + (d % 3) * 10);
+        const entDuration = Math.floor((entEnd - entStart) / 1000);
+        this.data.activities.push({ id: id++, app_name: 'YouTube', start_time: entStart.toISOString(), end_time: entEnd.toISOString(), duration: entDuration, category_id: 2 });
+
+        // add a short Social session (Discord)
+        const socStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 20, 30, 0);
+        const socEnd = new Date(socStart);
+        socEnd.setMinutes(socEnd.getMinutes() + 20 + (d % 2) * 5);
+        const socDuration = Math.floor((socEnd - socStart) / 1000);
+        this.data.activities.push({ id: id++, app_name: 'Discord', start_time: socStart.toISOString(), end_time: socEnd.toISOString(), duration: socDuration, category_id: 3 });
+      }
+    }
   }
 
   encryptBuffer(buffer) {
