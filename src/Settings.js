@@ -7,6 +7,7 @@ class Settings extends React.Component {
             categories: [],
             theme: 'light',
             reportFrequency: { daily: true, weekly: false, monthly: false, yearly: false },
+            emailRecipient: '',
             smtp: { host: '', port: '', user: '', pass: '', from: '' },
             screenLimit: 28800,
             studyGoal: 7200,
@@ -25,6 +26,7 @@ class Settings extends React.Component {
                 categories: settings.categories || [],
                 theme: settings.theme || 'light',
                 reportFrequency: settings.reportFrequency || { daily: true, weekly: false, monthly: false, yearly: false },
+                emailRecipient: settings.emailRecipient || '',
                 smtp: settings.smtp || { host: '', port: '', user: '', pass: '', from: '' },
                 screenLimit: settings.screenLimit || 28800,
                 studyGoal: settings.studyGoal || 7200,
@@ -198,6 +200,22 @@ class Settings extends React.Component {
                             React.createElement('label', null, freq)
                         )
                     )
+                )
+            ),
+
+            // Email Recipient for Automated Reports
+            React.createElement('div', { className: 'settings-section' },
+                React.createElement('h2', null, 'Automated Email Reports'),
+                React.createElement('div', { className: 'form-group' },
+                    React.createElement('label', null, 'Recipient Email Address:'),
+                    React.createElement('input', {
+                        type: 'email',
+                        value: this.state.emailRecipient,
+                        onChange: (e) => this.setState({ emailRecipient: e.target.value }),
+                        placeholder: 'user@example.com',
+                        className: 'form-input'
+                    }),
+                    React.createElement('p', { className: 'text-muted' }, 'Reports will be automatically sent to this email based on your selected frequencies.')
                 )
             ),
 

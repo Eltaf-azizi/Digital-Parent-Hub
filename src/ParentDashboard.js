@@ -1,5 +1,6 @@
 const { PieChart, Pie, Cell, ResponsiveContainer } = Recharts;
 const Settings = require('./Settings');
+const ReportsView = require('./ReportsView');
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
@@ -7,7 +8,8 @@ class ParentDashboard extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            showSettings: false
+            showSettings: false,
+            showReports: false
         };
     }
 
@@ -21,12 +23,23 @@ class ParentDashboard extends React.Component {
         this.setState(prev => ({ showSettings: !prev.showSettings }));
     };
 
+    toggleReports = () => {
+        this.setState(prev => ({ showReports: !prev.showReports }));
+    };
+
     render() {
         const { data, onSwitchToChild } = this.props;
-        const { showSettings } = this.state;
+        const { showSettings, showReports } = this.state;
 
         if (showSettings) {
             return React.createElement(Settings, { onClose: this.toggleSettings });
+        }
+
+        if (showReports) {
+            return React.createElement('div', null,
+                React.createElement('button', { onClick: this.toggleReports, className: 'btn btn-secondary', style: { marginBottom: '10px' } }, 'Back to Dashboard'),
+                React.createElement(ReportsView)
+            );
         }
         if (!data) return React.createElement('div', null, 'No data available');
 
@@ -35,6 +48,7 @@ class ParentDashboard extends React.Component {
         return React.createElement('div', { className: 'dashboard' },
             React.createElement('button', { onClick: onSwitchToChild, className: 'btn btn-secondary parent-access-btn' }, 'Switch to Child View'),
             React.createElement('button', { onClick: this.toggleSettings, className: 'btn btn-outline settings-btn' }, 'Settings'),
+            React.createElement('button', { onClick: this.toggleReports, className: 'btn btn-outline reports-btn' }, 'Reports'),
 
             React.createElement('h1', { className: 'text-center' }, 'Digital Parent Hub - Parent View'),
 

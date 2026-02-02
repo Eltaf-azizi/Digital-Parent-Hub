@@ -238,10 +238,11 @@ async function createWindow() {
     const theme = db.getSetting('theme') || 'light';
     const reportFrequencyStr = db.getSetting('report_frequency');
     const reportFrequency = reportFrequencyStr ? JSON.parse(reportFrequencyStr) : { daily: true, weekly: false, monthly: false, yearly: false };
+    const emailRecipient = db.getSetting('email_recipient') || '';
     const smtp = db.getSmtpSettings();
     const screenLimit = parseInt(db.getSetting('daily_screen_limit')) || 28800;
     const studyGoal = parseInt(db.getSetting('study_goal')) || 7200;
-    return { categories, theme, reportFrequency, smtp, screenLimit, studyGoal };
+    return { categories, theme, reportFrequency, emailRecipient, smtp, screenLimit, studyGoal };
   });
 
   ipcMain.handle('save-settings', (event, settings) => {
@@ -255,6 +256,7 @@ async function createWindow() {
     }
     db.setSetting('theme', settings.theme);
     db.setSetting('report_frequency', JSON.stringify(settings.reportFrequency));
+    db.setSetting('email_recipient', settings.emailRecipient);
     db.setSmtpSettings(settings.smtp);
     db.setSetting('daily_screen_limit', settings.screenLimit.toString());
     db.setSetting('study_goal', settings.studyGoal.toString());
@@ -293,6 +295,79 @@ async function createWindow() {
     db.deleteAllData();
   });
 
+  // Report generation handlers
+  ipcMain.handle('generate-report', async (event, type, startDate) => {
+    try {
+      const date = new Date(startDate);
+      let report;
+      switch (type) {
+        case 'daily':
+          report = await reports.generateDailyReport(date);
+          break;
+        case 'weekly':
+          report = await reports.generateWeeklyReport(date);
+          break;
+        case 'monthly':
+          report = await reports.generateMonthlyReport(date);
+          break;
+        case 'yearly':
+          report = await reports.generateYearlyReport(date);
+          break;
+        default:
+          throw new Error('Invalid report type');
+      }
+      return report;
+    } catch (error) {
+      console.error('Error generating report:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('get-reports', () => {
+    try {
+      return db.getReports();
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('store-report', (event, type, data) => {
+    try {
+      db.addReport(type, data);
+      return { success: true };
+    } catch (error) {
+      console.error('Error storing report:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('send-report-email', async (event, toEmail, type, startDate) => {
+    try {
+      const date = new Date(startDate);
+      switch (type) {
+        case 'daily':
+          await emailService.sendDailyReportEmail(toEmail, date);
+          break;
+        case 'weekly':
+          await emailService.sendWeeklyReportEmail(toEmail, date);
+          break;
+        case 'monthly':
+          await emailService.sendMonthlyReportEmail(toEmail, date);
+          break;
+        case 'yearly':
+          await emailService.sendYearlyReportEmail(toEmail, date);
+          break;
+        default:
+          throw new Error('Invalid report type');
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Error sending email:', error);
+      throw error;
+    }
+  });
+
   // Ensure 'Other' category exists
   const categories = db.getCategories();
   let otherCat = categories.find(c => c.name === 'Other');
@@ -311,6 +386,9 @@ async function createWindow() {
 
   // Schedule report generation based on settings (generate now, then run periodically)
   scheduleReports();
+
+  // Schedule automated email reports if SMTP is configured
+  emailService.scheduleAutomatedEmails();
 }
 
 function scheduleReports() {

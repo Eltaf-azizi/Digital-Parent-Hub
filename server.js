@@ -322,6 +322,84 @@ app.post('/api/delete-all-data', requireAuth, (req, res) => {
   }
 });
 
+// Report generation endpoints
+app.post('/api/generate-report', (req, res) => {
+  try {
+    const { type, startDate } = req.body;
+    const date = new Date(startDate);
+    let report;
+    switch (type) {
+      case 'daily':
+        report = reports.generateDailyReport(date);
+        break;
+      case 'weekly':
+        report = reports.generateWeeklyReport(date);
+        break;
+      case 'monthly':
+        report = reports.generateMonthlyReport(date);
+        break;
+      case 'yearly':
+        report = reports.generateYearlyReport(date);
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid report type' });
+    }
+    res.json(report);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reports', (req, res) => {
+  try {
+    const storedReports = db.getReports();
+    res.json(storedReports);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/store-report', (req, res) => {
+  try {
+    const { type, data } = req.body;
+    db.addReport(type, data);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/send-report-email', (req, res) => {
+  try {
+    const { toEmail, type, startDate } = req.body;
+    const date = new Date(startDate);
+    let promise;
+    switch (type) {
+      case 'daily':
+        promise = emailService.sendDailyReportEmail(toEmail, date);
+        break;
+      case 'weekly':
+        promise = emailService.sendWeeklyReportEmail(toEmail, date);
+        break;
+      case 'monthly':
+        promise = emailService.sendMonthlyReportEmail(toEmail, date);
+        break;
+      case 'yearly':
+        promise = emailService.sendYearlyReportEmail(toEmail, date);
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid report type' });
+    }
+    promise.then(() => {
+      res.json({ success: true });
+    }).catch(err => {
+      res.status(500).json({ error: err.message });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Serve the main HTML
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'src/public/index.html'));

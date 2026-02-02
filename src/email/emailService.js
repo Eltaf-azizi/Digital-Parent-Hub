@@ -5,6 +5,13 @@ class EmailService {
     this.db = db;
     this.reports = reports;
     this.transporter = null;
+    this.emailConfigured = false;
+  }
+
+  checkEmailConfigured() {
+    const smtpSettings = this.db.getSmtpSettings();
+    this.emailConfigured = !!(smtpSettings && smtpSettings.host && smtpSettings.port && smtpSettings.user && smtpSettings.pass && smtpSettings.from);
+    return this.emailConfigured;
   }
 
   async initTransporter() {
@@ -103,6 +110,75 @@ class EmailService {
   async sendYearlyReportEmail(toEmail, startDate) {
     const report = await this.reports.generateYearlyReport(startDate);
     await this.sendReportEmail(toEmail, report, 'yearly');
+  }
+
+  // Auto-schedule email reports based on frequency and recipient settings
+  scheduleAutomatedEmails() {
+    if (!this.checkEmailConfigured()) {
+      console.log('[EmailService] SMTP not configured, skipping automated emails');
+      return;
+    }
+
+    try {
+      const recipientEmail = this.db.getSetting('email_recipient');
+      if (!recipientEmail) {
+        console.log('[EmailService] No email recipient configured');
+        return;
+      }
+
+      const freqStr = this.db.getSetting('report_frequency');
+      const freq = freqStr ? JSON.parse(freqStr) : { daily: true, weekly: false, monthly: false, yearly: false };
+
+      // Helper to send and log
+      const sendReport = async (type, date) => {
+        try {
+          switch (type) {
+            case 'daily':
+              await this.sendDailyReportEmail(recipientEmail, date);
+              console.log(`[EmailService] Daily report sent to ${recipientEmail}`);
+              break;
+            case 'weekly':
+              await this.sendWeeklyReportEmail(recipientEmail, date);
+              console.log(`[EmailService] Weekly report sent to ${recipientEmail}`);
+              break;
+            case 'monthly':
+              await this.sendMonthlyReportEmail(recipientEmail, date);
+              console.log(`[EmailService] Monthly report sent to ${recipientEmail}`);
+              break;
+            case 'yearly':
+              await this.sendYearlyReportEmail(recipientEmail, date);
+              console.log(`[EmailService] Yearly report sent to ${recipientEmail}`);
+              break;
+          }
+        } catch (err) {
+          console.error(`[EmailService] Error sending ${type} report:`, err.message);
+        }
+      };
+
+      const now = new Date();
+
+      // Send immediately if enabled
+      if (freq.daily) sendReport('daily', now);
+      if (freq.weekly) sendReport('weekly', now);
+      if (freq.monthly) sendReport('monthly', now);
+      if (freq.yearly) sendReport('yearly', now);
+
+      // Schedule periodic sends (approximate times)
+      if (freq.daily) {
+        setInterval(() => sendReport('daily', new Date()), 24 * 60 * 60 * 1000);
+      }
+      if (freq.weekly) {
+        setInterval(() => sendReport('weekly', new Date()), 7 * 24 * 60 * 60 * 1000);
+      }
+      if (freq.monthly) {
+        setInterval(() => sendReport('monthly', new Date()), 30 * 24 * 60 * 60 * 1000);
+      }
+      if (freq.yearly) {
+        setInterval(() => sendReport('yearly', new Date()), 365 * 24 * 60 * 60 * 1000);
+      }
+    } catch (err) {
+      console.error('[EmailService] Error scheduling automated emails:', err.message);
+    }
   }
 }
 

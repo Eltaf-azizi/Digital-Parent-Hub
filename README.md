@@ -13,6 +13,8 @@ A privacy-first desktop application that helps families monitor and encourage he
 
 ### For Parents
 - **Comprehensive Analytics**: Detailed reports on screen time patterns and productivity
+- **Multi-Period Reports**: Generate daily, weekly, monthly, and yearly reports with trends
+- **Automated Email Reports**: Schedule automatic report delivery via email
 - **Category Management**: Customize activity categories (Study, Entertainment, Social, etc.)
 - **Alert System**: Configurable notifications for screen time limits and goals
 - **Data Export**: Backup, restore, and export data in various formats
@@ -129,14 +131,54 @@ Digital-Parent-Hub/
 │   ├── App.js             # React main component
 │   ├── ChildDashboard.js  # Child view
 │   ├── ParentDashboard.js # Parent analytics
+│   ├── ReportsView.js     # Reports & report generation UI
 │   ├── OnboardingWizard.js # Setup wizard
 │   ├── Settings.js        # Configuration
 │   ├── data/database.js   # Database operations
-│   ├── reports/reports.js # Report generation
+│   ├── reports/reports.js # Report generation (daily/weekly/monthly/yearly)
+│   ├── email/emailService.js # Email service & scheduling
 │   └── styles.css         # Styling
 ├── test_*.js              # Test files
 └── package.json
 ```
+
+### New Report Features
+
+#### Report Generation
+Reports are generated on-demand or automatically based on configured frequency. Each report includes:
+- **Total Screen Time**: Aggregate time spent across all categories
+- **Category Breakdown**: Time distribution across activity categories
+- **Productivity Score**: Percentage of time spent on Study activities
+- **Balance Status**: Classification (Excellent, Balanced, Needs Improvement)
+- **Trend Analysis**: Comparison with previous period
+- **Suggestions**: Personalized recommendations for improvement
+- **Pattern Recognition**: Most used category, best day of period
+
+#### Supported Report Periods
+- **Daily**: Single day activity summary
+- **Weekly**: 7-day activity analysis
+- **Monthly**: Full month activity trends
+- **Yearly**: Annual digital well-being summary
+
+#### Automated Email Reports
+Configure automatic report delivery:
+1. Go to **Settings** → **Automated Email Reports**
+2. Enter recipient email address
+3. Configure SMTP settings (Settings → Email Configuration)
+4. Select report frequencies (daily, weekly, monthly, yearly)
+5. Reports will be automatically generated and emailed based on schedule
+
+#### Report API Endpoints
+- `POST /api/generate-report` - Generate a new report
+- `GET /api/reports` - Retrieve stored reports
+- `POST /api/store-report` - Save generated report
+- `POST /api/send-report-email` - Email a report to recipient
+
+#### IPC Handlers (Electron)
+- `ipcMain.handle('generate-report', type, startDate)` - Generate report
+- `ipcMain.handle('get-reports')` - Get all stored reports
+- `ipcMain.handle('store-report', type, data)` - Store report
+- `ipcMain.handle('send-report-email', toEmail, type, startDate)` - Send email
 
 ### Running Tests
 ```bash
@@ -145,6 +187,18 @@ npm test  # Run all tests
 node test_simple.js      # Basic database tests
 node test_tracking.js    # Tracking and reports
 node test_encryption.js  # Encryption tests
+```
+
+### Testing Report Features
+The app includes sample data (12 days of activity) for testing reports:
+```bash
+npm start
+# Navigate to Parent Dashboard (PIN: 1234)
+# Click "Reports" button
+# Select report type (Daily/Weekly/Monthly)
+# Click "Generate Report"
+# View report details and trends
+# Configure SMTP and send via email
 ```
 
 ### Building for Distribution
