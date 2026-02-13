@@ -1,5 +1,3 @@
-const { ipcRenderer, dialog } = require('electron');
-
 class Settings extends React.Component {
     constructor(props) {
         super(props);
@@ -21,7 +19,8 @@ class Settings extends React.Component {
 
     loadSettings = async () => {
         try {
-            const settings = await ipcRenderer.invoke('get-settings');
+            const response = await fetch('/api/get-settings');
+            const settings = await response.json();
             this.setState({
                 categories: settings.categories || [],
                 theme: settings.theme || 'light',
@@ -40,7 +39,12 @@ class Settings extends React.Component {
 
     saveSettings = async () => {
         try {
-            await ipcRenderer.invoke('save-settings', this.state);
+            const response = await fetch('/api/save-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(this.state)
+            });
+            const result = await response.json();
             alert('Settings saved successfully!');
         } catch (error) {
             console.error('Error saving settings:', error);
@@ -287,5 +291,3 @@ class Settings extends React.Component {
         );
     }
 }
-
-module.exports = Settings;

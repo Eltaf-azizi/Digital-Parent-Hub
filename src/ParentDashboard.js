@@ -1,7 +1,3 @@
-const { PieChart, Pie, Cell, ResponsiveContainer } = Recharts;
-const Settings = require('./Settings');
-const ReportsView = require('./ReportsView');
-
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 class ParentDashboard extends React.Component {
@@ -134,5 +130,3 @@ class ParentDashboard extends React.Component {
         );
     }
 }
-
-module.exports = ParentDashboard;

@@ -4,14 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digital Parent Hub</title>
-    <link rel="stylesheet" href="./src/styles.css">
+    <link rel="stylesheet" href="../styles.css">
 </head>
 <body>
     <div id="root"></div>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/recharts@2/umd/Recharts.js"></script>
-    <script src="./src/Dashboard.js"></script>
-    <script src="./src/App.js"></script>
+    <script src="../ChildDashboard.js"></script>
+    <script src="../Dashboard.js"></script>
+    <script src="../ParentDashboard.js"></script>
+    <script src="../Settings.js"></script>
+    <script src="../ReportsView.js"></script>
+    <script src="../OnboardingWizard.js"></script>
+    <script src="../App.js"></script>
+    <script>
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+    </script>
 </body>
 </html>

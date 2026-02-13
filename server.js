@@ -18,6 +18,7 @@ const reports = new Reports(db);
 const emailService = new EmailService(db, reports);
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'src')));
 app.use(express.static(path.join(__dirname, 'src/public')));
 
 // Simple auth middleware

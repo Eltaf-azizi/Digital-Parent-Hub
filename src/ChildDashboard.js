@@ -59,5 +59,3 @@ class ChildDashboard extends React.Component {
         );
     }
 }
-
-module.exports = ChildDashboard;

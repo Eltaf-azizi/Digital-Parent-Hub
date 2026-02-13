@@ -200,5 +200,3 @@ class ReportsView extends React.Component {
         );
     }
 }
-
-module.exports = ReportsView;

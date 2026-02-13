@@ -1,7 +1,3 @@
-const ParentDashboard = require('./ParentDashboard');
-const ChildDashboard = require('./ChildDashboard');
-const OnboardingWizard = require('./OnboardingWizard');
-
 class App extends React.Component {
     constructor(props) {
         super(props);
@@ -20,14 +16,19 @@ class App extends React.Component {
     }
 
     async componentDidMount() {
-        const response = await fetch('/api/get-onboarding-completed');
-        const onboardingCompleted = await response.json();
-        if (!onboardingCompleted) {
+        try {
+            const response = await fetch('/api/get-onboarding-completed');
+            const onboardingCompleted = await response.json();
+            if (!onboardingCompleted) {
+                this.setState({ checkingOnboarding: false });
+                return;
+            }
+            this.setState({ onboardingCompleted: true, checkingOnboarding: false });
+            this.fetchData();
+        } catch (error) {
+            console.error('Error checking onboarding:', error);
             this.setState({ checkingOnboarding: false });
-            return;
         }
-        this.setState({ onboardingCompleted: true, checkingOnboarding: false });
-        this.fetchData();
     }
 
     fetchData = async () => {
