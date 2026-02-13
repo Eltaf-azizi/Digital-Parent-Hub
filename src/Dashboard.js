@@ -1,6 +1,14 @@
-const { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } = Recharts;
+var PieChart = Recharts.PieChart;
+var Pie = Recharts.Pie;
+var Cell = Recharts.Cell;
+var ResponsiveContainer = Recharts.ResponsiveContainer;
+var BarChart = Recharts.BarChart;
+var Bar = Recharts.Bar;
+var XAxis = Recharts.XAxis;
+var YAxis = Recharts.YAxis;
+var Tooltip = Recharts.Tooltip;
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+var COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 class Dashboard extends React.Component {
     formatTime(seconds) {

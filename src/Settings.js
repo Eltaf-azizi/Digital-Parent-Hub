@@ -19,7 +19,7 @@ class Settings extends React.Component {
 
     loadSettings = async () => {
         try {
-            const response = await fetch('/api/get-settings');
+            const response = await fetch((window.API_BASE || '') + '/api/get-settings');
             const settings = await response.json();
             this.setState({
                 categories: settings.categories || [],
@@ -39,7 +39,7 @@ class Settings extends React.Component {
 
     saveSettings = async () => {
         try {
-            const response = await fetch('/api/save-settings', {
+            const response = await fetch((window.API_BASE || '') + '/api/save-settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(this.state)

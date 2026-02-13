@@ -1,4 +1,13 @@
-const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } = Recharts;
+var BarChart = Recharts.BarChart;
+var Bar = Recharts.Bar;
+var XAxis = Recharts.XAxis;
+var YAxis = Recharts.YAxis;
+var CartesianGrid = Recharts.CartesianGrid;
+var Tooltip = Recharts.Tooltip;
+var Legend = Recharts.Legend;
+var ResponsiveContainer = Recharts.ResponsiveContainer;
+var LineChart = Recharts.LineChart;
+var Line = Recharts.Line;
 
 class ReportsView extends React.Component {
     constructor(props) {
@@ -22,7 +31,7 @@ class ReportsView extends React.Component {
 
     fetchReports = async () => {
         try {
-            const response = await fetch('/api/reports');
+            const response = await fetch((window.API_BASE || '') + '/api/reports');
             const reports = await response.json();
             this.setState({ reports });
         } catch (error) {
@@ -35,7 +44,7 @@ class ReportsView extends React.Component {
         const { reportType, reportDate } = this.state;
         this.setState({ generatingReport: true, message: '' });
         try {
-            const response = await fetch('/api/generate-report', {
+            const response = await fetch((window.API_BASE || '') + '/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: reportType, startDate: reportDate })
@@ -63,7 +72,7 @@ class ReportsView extends React.Component {
         }
         this.setState({ emailSending: true, message: '' });
         try {
-            const response = await fetch('/api/send-report-email', {
+            const response = await fetch((window.API_BASE || '') + '/api/send-report-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ toEmail: emailAddress, type: reportType, startDate: reportDate })

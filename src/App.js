@@ -17,7 +17,7 @@ class App extends React.Component {
 
     async componentDidMount() {
         try {
-            const response = await fetch('/api/get-onboarding-completed');
+            const response = await fetch((window.API_BASE || '') + '/api/get-onboarding-completed');
             const onboardingCompleted = await response.json();
             if (!onboardingCompleted) {
                 this.setState({ checkingOnboarding: false });
@@ -33,7 +33,7 @@ class App extends React.Component {
 
     fetchData = async () => {
         try {
-            const apiCall = this.state.view === 'child' ? '/api/get-child-data' : '/api/get-parent-data';
+            const apiCall = this.state.view === 'child' ? (window.API_BASE || '') + '/api/get-child-data' : (window.API_BASE || '') + '/api/get-parent-data';
             const response = await fetch(apiCall);
             const data = await response.json();
             this.setState({ data, loading: false });
@@ -63,7 +63,7 @@ class App extends React.Component {
 
     handleLogin = async () => {
         try {
-            const response = await fetch('/api/verify-parent-pin', {
+            const response = await fetch((window.API_BASE || '') + '/api/verify-parent-pin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pin: this.state.pin })
@@ -142,4 +142,4 @@ class App extends React.Component {
     }
 }
 
-ReactDOM.render(React.createElement(App), document.getElementById('root'));
+// App is rendered from index.html using ReactDOM.createRoot

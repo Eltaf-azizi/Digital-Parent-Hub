@@ -126,8 +126,17 @@ class OnboardingWizard extends React.Component {
 
     completeOnboarding = async () => {
         try {
-            await ipcRenderer.invoke('set-parent-pin', this.state.pin);
-            await ipcRenderer.invoke('set-onboarding-completed', true);
+            // Save pin and onboarding completion via backend API
+            await fetch((window.API_BASE || '') + '/api/set-parent-pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: this.state.pin })
+            });
+            await fetch((window.API_BASE || '') + '/api/set-onboarding-completed', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed: true })
+            });
             this.props.onComplete();
         } catch (error) {
             console.error('Error completing onboarding:', error);
