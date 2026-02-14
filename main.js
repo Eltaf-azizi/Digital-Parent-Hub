@@ -281,6 +281,16 @@ async function createWindow() {
     db.setSetting('study_goal', settings.studyGoal.toString());
   });
 
+  ipcMain.handle('delete-category', (event, categoryId) => {
+    try {
+      db.deleteCategory(categoryId);
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      throw error;
+    }
+  });
+
   ipcMain.handle('export-data', (event, format) => {
     const data = db.exportData(format);
     const result = dialog.showSaveDialogSync(mainWindow, {

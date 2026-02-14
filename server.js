@@ -251,7 +251,8 @@ app.get('/api/get-settings', requireAuth, (req, res) => {
     const smtp = db.getSmtpSettings();
     const screenLimit = parseInt(db.getSetting('daily_screen_limit')) || 28800;
     const studyGoal = parseInt(db.getSetting('study_goal')) || 7200;
-    res.json({ categories, theme, reportFrequency, smtp, screenLimit, studyGoal });
+    const emailRecipient = db.getSetting('email_recipient') || '';
+    res.json({ categories, theme, reportFrequency, smtp, screenLimit, studyGoal, emailRecipient });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -269,9 +270,20 @@ app.post('/api/save-settings', requireAuth, (req, res) => {
     }
     db.setSetting('theme', settings.theme);
     db.setSetting('report_frequency', JSON.stringify(settings.reportFrequency));
+    db.setSetting('email_recipient', settings.emailRecipient || '');
     db.setSmtpSettings(settings.smtp);
     db.setSetting('daily_screen_limit', settings.screenLimit.toString());
     db.setSetting('study_goal', settings.studyGoal.toString());
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/delete-category', requireAuth, (req, res) => {
+  try {
+    const { categoryId } = req.body;
+    db.deleteCategory(categoryId);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -78,6 +78,12 @@ class Settings extends React.Component {
             this.setState(prev => ({
                 categories: prev.categories.filter(c => c.id !== id)
             }));
+            // Also delete from backend
+            fetch((window.API_BASE || '') + '/api/delete-category', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ categoryId: id })
+            }).catch(err => console.error('Error deleting category:', err));
         }
     };
 
@@ -100,10 +106,23 @@ class Settings extends React.Component {
 
     handleExport = async (format) => {
         try {
-            const result = await ipcRenderer.invoke('export-data', format);
-            if (result) {
-                alert(`Data exported to ${result}`);
+            if (format === 'pdf') {
+                alert('PDF export is not yet implemented. Please use JSON or CSV.');
+                return;
             }
+            const response = await fetch((window.API_BASE || '') + '/api/export-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ format })
+            });
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `digital-parent-hub-export.${format}`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            alert('Data exported successfully!');
         } catch (error) {
             console.error('Export error:', error);
             alert('Export failed');
@@ -112,9 +131,12 @@ class Settings extends React.Component {
 
     handleBackup = async () => {
         try {
-            const result = await ipcRenderer.invoke('backup-database');
-            if (result) {
-                alert(`Backup saved to ${result}`);
+            const response = await fetch((window.API_BASE || '') + '/api/backup-database', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (response.ok) {
+                alert('Backup created successfully!');
             }
         } catch (error) {
             console.error('Backup error:', error);
@@ -124,11 +146,15 @@ class Settings extends React.Component {
 
     handleRestore = async () => {
         try {
-            const result = await dialog.showOpenDialog({ properties: ['openFile'] });
-            if (!result.canceled) {
-                await ipcRenderer.invoke('restore-database', result.filePaths[0]);
+            const result = prompt('Enter the path to the backup file (or use the backup feature to restore):');
+            if (result) {
+                await fetch((window.API_BASE || '') + '/api/restore-database', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ backupPath: result })
+                });
                 alert('Database restored successfully!');
-                this.loadSettings(); // Reload settings
+                this.loadSettings();
             }
         } catch (error) {
             console.error('Restore error:', error);
@@ -139,7 +165,10 @@ class Settings extends React.Component {
     handleDeleteData = async () => {
         if (confirm('Are you sure you want to delete all data? This cannot be undone!')) {
             try {
-                await ipcRenderer.invoke('delete-all-data');
+                await fetch((window.API_BASE || '') + '/api/delete-all-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
                 alert('All data deleted!');
                 this.loadSettings();
             } catch (error) {
@@ -291,3 +320,6 @@ class Settings extends React.Component {
         );
     }
 }
+
+// Make component available globally
+window.Settings = Settings;

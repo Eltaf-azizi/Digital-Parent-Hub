@@ -129,6 +129,11 @@ class MyDatabase {
     }
   }
 
+  deleteCategory(id) {
+    this.data.categories = this.data.categories.filter(c => c.id !== id);
+    this.saveDatabase();
+  }
+
   // Activities
   addActivity(activity) {
     const id = Math.max(...this.data.activities.map(a => a.id), 0) + 1;

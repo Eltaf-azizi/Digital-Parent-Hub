@@ -209,3 +209,6 @@ class ReportsView extends React.Component {
         );
     }
 }
+
+// Make component available globally
+window.ReportsView = ReportsView;

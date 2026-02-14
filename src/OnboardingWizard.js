@@ -171,3 +171,6 @@ class OnboardingWizard extends React.Component {
         );
     }
 }
+
+// Make component available globally
+window.OnboardingWizard = OnboardingWizard;

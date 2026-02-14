@@ -65,3 +65,6 @@ class ChildDashboard extends React.Component {
         );
     }
 }
+
+// Make component available globally
+window.ChildDashboard = ChildDashboard;

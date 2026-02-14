@@ -1,3 +1,8 @@
+// Make components available globally for browser script loading
+var ChildDashboard = window.ChildDashboard;
+var ParentDashboard = window.ParentDashboard;
+var OnboardingWizard = window.OnboardingWizard;
+
 class App extends React.Component {
     constructor(props) {
         super(props);

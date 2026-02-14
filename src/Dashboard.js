@@ -65,3 +65,6 @@ class Dashboard extends React.Component {
         );
     }
 }
+
+// Make component available globally
+window.Dashboard = Dashboard;
