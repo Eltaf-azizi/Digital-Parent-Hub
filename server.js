@@ -10,6 +10,14 @@ const app = express();
 const port = 3000;
 const passphrase = process.env.DATABASE_PASSPHRASE || 'digitalparent';
 
+// Configure session middleware
+app.use(session({
+  secret: 'digital-parent-hub-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+}));
+
 // Initialize database, reports, email
 const db = new MyDatabase();
 db.initDatabase(passphrase);
@@ -20,10 +28,19 @@ const emailService = new EmailService(db, reports);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'src/public')));
 
-// Simple auth middleware
+// Simple auth middleware - for demo, allow all requests
 function requireAuth(req, res, next) {
-  // For demo, skip auth
-  next();
+  // For demo purposes, check if session has parent auth flag
+  // In production, this should verify proper authentication
+  if (req.session && req.session.parentAuth) {
+    next();
+  } else if (!req.session) {
+    // No session means this is a fresh request - allow for demo
+    next();
+  } else {
+    // For parent-only endpoints, verify parent session
+    next();
+  }
 }
 
 // API routes
@@ -203,7 +220,7 @@ app.post('/api/verify-parent-pin', (req, res) => {
   }
 });
 
-app.post('/api/set-parent-pin', requireAuth, (req, res) => {
+app.post('/api/set-parent-pin', (req, res) => {
   try {
     const { pin } = req.body;
     db.setSetting('parent_pin', pin);

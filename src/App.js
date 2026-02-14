@@ -1,8 +1,4 @@
-// Make components available globally for browser script loading
-var ChildDashboard = window.ChildDashboard;
-var ParentDashboard = window.ParentDashboard;
-var OnboardingWizard = window.OnboardingWizard;
-
+// App component - waits for child components to be available on window
 class App extends React.Component {
     constructor(props) {
         super(props);
@@ -16,11 +12,35 @@ class App extends React.Component {
             onboardingCompleted: false,
             checkingOnboarding: true,
             parentSession: false,
-            sessionTimeout: null
+            sessionTimeout: null,
+            componentsLoaded: false
         };
     }
 
     async componentDidMount() {
+        // Wait for child components to be available
+        const waitForComponents = () => {
+            return new Promise((resolve) => {
+                const check = () => {
+                    if (window.ChildDashboard && window.ParentDashboard && window.OnboardingWizard) {
+                        resolve();
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+            });
+        };
+
+        await waitForComponents();
+        this.setState({ componentsLoaded: true });
+
+        // Check for existing parent session
+        const hasParentSession = localStorage.getItem('parentSession') === 'true';
+        if (hasParentSession) {
+            this.setState({ parentSession: true });
+        }
+
         try {
             const response = await fetch((window.API_BASE || '') + '/api/get-onboarding-completed');
             const onboardingCompleted = await response.json();
@@ -49,7 +69,9 @@ class App extends React.Component {
     };
 
     handleSwitchToParent = () => {
-        if (this.state.parentSession) {
+        // Check if there's an existing parent session in localStorage
+        const hasExistingSession = localStorage.getItem('parentSession') === 'true';
+        if (hasExistingSession || this.state.parentSession) {
             this.setState({ view: 'parent' }, () => this.fetchData());
         } else {
             this.setState({ showLoginModal: true });
@@ -57,6 +79,7 @@ class App extends React.Component {
     };
 
     handleSwitchToChild = () => {
+        localStorage.removeItem('parentSession');
         this.setState({ view: 'child', parentSession: false }, () => {
             if (this.state.sessionTimeout) {
                 clearTimeout(this.state.sessionTimeout);
@@ -75,10 +98,13 @@ class App extends React.Component {
             });
             const isValid = await response.json();
             if (isValid) {
+                // Store auth state in localStorage for persistence across page loads
+                localStorage.setItem('parentSession', 'true');
                 this.setState({ view: 'parent', showLoginModal: false, pin: '', pinError: '', parentSession: true }, () => this.fetchData());
                 if (this.state.sessionTimeout) clearTimeout(this.state.sessionTimeout);
                 const timeout = setTimeout(() => {
                     this.setState({ parentSession: false, view: 'child' });
+                    localStorage.removeItem('parentSession');
                 }, 30 * 60 * 1000);
                 this.setState({ sessionTimeout: timeout });
             } else {
@@ -100,11 +126,15 @@ class App extends React.Component {
     };
 
     render() {
-        const { view, data, loading, showLoginModal, pin, pinError, onboardingCompleted, checkingOnboarding } = this.state;
+        const { view, data, loading, showLoginModal, pin, pinError, onboardingCompleted, checkingOnboarding, componentsLoaded } = this.state;
 
-        if (checkingOnboarding) {
+        if (!componentsLoaded || checkingOnboarding) {
             return React.createElement('div', { className: 'loading' }, 'Loading...');
         }
+
+        const ChildDashboard = window.ChildDashboard;
+        const ParentDashboard = window.ParentDashboard;
+        const OnboardingWizard = window.OnboardingWizard;
 
         if (!onboardingCompleted) {
             return React.createElement(OnboardingWizard, { onComplete: this.handleOnboardingComplete });
