@@ -9,96 +9,98 @@ class OnboardingWizard extends React.Component {
         };
     }
 
-    steps = [
-        {
-            title: 'Welcome to Digital Parent Hub',
-            content: React.createElement('div', { className: 'text-center' },
-              React.createElement('h2', null, 'Welcome to Your Family\'s Digital Well-being Journey!'),
-              React.createElement('p', null, 'Digital Parent Hub is designed to help families monitor and encourage healthy screen time habits in a safe, private way.'),
-              React.createElement('p', null, 'Let\'s set this up together in just a few simple steps.')
-            )
-        },
-        {
-            title: 'What We Track',
-            content: React.createElement('div', null,
-                React.createElement('h3', null, 'We Track:'),
-                React.createElement('ul', null,
-                    React.createElement('li', null, 'Application names (e.g., Chrome, Word, Netflix)'),
-                    React.createElement('li', null, 'Assigned categories (Study, Entertainment, Social, etc.)'),
-                    React.createElement('li', null, 'Duration of usage for each application')
-                ),
-                React.createElement('p', null, 'This helps us provide insights into screen time patterns and productivity.')
-            )
-        },
-        {
-            title: 'What We Never Track',
-            content: React.createElement('div', null,
-                React.createElement('h3', null, 'We Never Track:'),
-                React.createElement('ul', null,
-                    React.createElement('li', null, 'Screen content or what you\'re viewing'),
-                    React.createElement('li', null, 'Keystrokes or typing activity'),
-                    React.createElement('li', null, 'Messages, emails, or any communication content'),
-                    React.createElement('li', null, 'Websites visited (beyond the browser application itself)'),
-                    React.createElement('li', null, 'Files accessed or their contents'),
-                    React.createElement('li', null, 'Any private or personal information')
-                ),
-                React.createElement('p', null, 'Your privacy is our top priority. We only track application usage to promote healthy digital habits.')
-            )
-        },
-        {
-            title: 'Privacy Policy',
-            content: React.createElement('div', { className: 'onboarding-scroll' },
-                React.createElement('h3', null, 'Privacy Policy'),
-                React.createElement('p', null, 'Digital Parent Hub is committed to protecting your privacy. We collect only the minimum data necessary to provide our digital well-being services.'),
-                React.createElement('h4', null, 'Data Collection'),
-                React.createElement('p', null, 'We collect information about which applications are used and for how long. This data is stored locally on your device and is encrypted.'),
-                React.createElement('h4', null, 'Data Usage'),
-                React.createElement('p', null, 'Collected data is used solely to generate reports and insights about screen time habits. It is never shared with third parties.'),
-                React.createElement('h4', null, 'Data Security'),
-                React.createElement('p', null, 'All data is encrypted using industry-standard encryption. Access to parent features requires a PIN that you set.'),
-                React.createElement('h4', null, 'Your Rights'),
-                React.createElement('p', null, 'You can export, backup, or delete all your data at any time. You have full control over your information.'),
-                React.createElement('h4', null, 'Contact'),
-                React.createElement('p', null, 'If you have any questions about this privacy policy, please contact us.')
-            )
-        },
-        {
-            title: 'Set Parent PIN',
-            content: React.createElement('div', { className: 'text-center' },
-                React.createElement('h3', null, 'Create a Secure Parent PIN'),
-                React.createElement('p', null, 'This PIN will keep your parent settings safe. Choose 4 digits that are easy for you to remember.'),
-                React.createElement('div', { className: 'form-group' },
-                    React.createElement('input', {
-                        type: 'password',
-                        placeholder: 'Enter PIN',
-                        value: this.state.pin,
-                        onChange: (e) => this.setState({ pin: e.target.value, pinError: '' }),
-                        className: 'form-input',
-                        maxLength: 4
-                    })
-                ),
-                React.createElement('div', { className: 'form-group' },
-                    React.createElement('input', {
-                        type: 'password',
-                        placeholder: 'Confirm PIN',
-                        value: this.state.pinConfirm,
-                        onChange: (e) => this.setState({ pinConfirm: e.target.value, pinError: '' }),
-                        className: 'form-input',
-                        maxLength: 4
-                    })
-                ),
-                this.state.pinError && React.createElement('p', { className: 'form-error' }, this.state.pinError)
-            )
-        },
-        {
-            title: 'Setup Complete!',
-            content: React.createElement('div', { className: 'text-center' },
-                React.createElement('h2', null, 'You\'re All Set!'),
-                React.createElement('p', null, 'Your Digital Parent Hub is now ready to help your family thrive in the digital world.'),
-                React.createElement('p', null, 'Remember: your privacy is protected, and we're here to support positive habits.')
-            )
-        }
-    ];
+    getSteps() {
+        return [
+            {
+                title: 'Welcome to Digital Parent Hub',
+                content: React.createElement('div', { className: 'text-center' },
+                  React.createElement('h2', null, 'Welcome to Your Family\'s Digital Well-being Journey!'),
+                  React.createElement('p', null, 'Digital Parent Hub is designed to help families monitor and encourage healthy screen time habits in a safe, private way.'),
+                  React.createElement('p', null, 'Let\'s set this up together in just a few simple steps.')
+                )
+            },
+            {
+                title: 'What We Track',
+                content: React.createElement('div', null,
+                    React.createElement('h3', null, 'We Track:'),
+                    React.createElement('ul', null,
+                        React.createElement('li', null, 'Application names (e.g., Chrome, Word, Netflix)'),
+                        React.createElement('li', null, 'Assigned categories (Study, Entertainment, Social, etc.)'),
+                        React.createElement('li', null, 'Duration of usage for each application')
+                    ),
+                    React.createElement('p', null, 'This helps us provide insights into screen time patterns and productivity.')
+                )
+            },
+            {
+                title: 'What We Never Track',
+                content: React.createElement('div', null,
+                    React.createElement('h3', null, 'We Never Track:'),
+                    React.createElement('ul', null,
+                        React.createElement('li', null, 'Screen content or what you\'re viewing'),
+                        React.createElement('li', null, 'Keystrokes or typing activity'),
+                        React.createElement('li', null, 'Messages, emails, or any communication content'),
+                        React.createElement('li', null, 'Websites visited (beyond the browser application itself)'),
+                        React.createElement('li', null, 'Files accessed or their contents'),
+                        React.createElement('li', null, 'Any private or personal information')
+                    ),
+                    React.createElement('p', null, 'Your privacy is our top priority. We only track application usage to promote healthy digital habits.')
+                )
+            },
+            {
+                title: 'Privacy Policy',
+                content: React.createElement('div', { className: 'onboarding-scroll' },
+                    React.createElement('h3', null, 'Privacy Policy'),
+                    React.createElement('p', null, 'Digital Parent Hub is committed to protecting your privacy. We collect only the minimum data necessary to provide our digital well-being services.'),
+                    React.createElement('h4', null, 'Data Collection'),
+                    React.createElement('p', null, 'We collect information about which applications are used and for how long. This data is stored locally on your device and is encrypted.'),
+                    React.createElement('h4', null, 'Data Usage'),
+                    React.createElement('p', null, 'Collected data is used solely to generate reports and insights about screen time habits. It is never shared with third parties.'),
+                    React.createElement('h4', null, 'Data Security'),
+                    React.createElement('p', null, 'All data is encrypted using industry-standard encryption. Access to parent features requires a PIN that you set.'),
+                    React.createElement('h4', null, 'Your Rights'),
+                    React.createElement('p', null, 'You can export, backup, or delete all your data at any time. You have full control over your information.'),
+                    React.createElement('h4', null, 'Contact'),
+                    React.createElement('p', null, 'If you have any questions about this privacy policy, please contact us.')
+                )
+            },
+            {
+                title: 'Set Parent PIN',
+                content: React.createElement('div', { className: 'text-center' },
+                    React.createElement('h3', null, 'Create a Secure Parent PIN'),
+                    React.createElement('p', null, 'This PIN will keep your parent settings safe. Choose 4 digits that are easy for you to remember.'),
+                    React.createElement('div', { className: 'form-group' },
+                        React.createElement('input', {
+                            type: 'password',
+                            placeholder: 'Enter PIN',
+                            value: this.state.pin,
+                            onChange: (e) => this.setState({ pin: e.target.value, pinError: '' }),
+                            className: 'form-input',
+                            maxLength: 4
+                        })
+                    ),
+                    React.createElement('div', { className: 'form-group' },
+                        React.createElement('input', {
+                            type: 'password',
+                            placeholder: 'Confirm PIN',
+                            value: this.state.pinConfirm,
+                            onChange: (e) => this.setState({ pinConfirm: e.target.value, pinError: '' }),
+                            className: 'form-input',
+                            maxLength: 4
+                        })
+                    ),
+                    this.state.pinError && React.createElement('p', { className: 'form-error' }, this.state.pinError)
+                )
+            },
+            {
+                title: 'Setup Complete!',
+                content: React.createElement('div', { className: 'text-center' },
+                    React.createElement('h2', null, 'You\'re All Set!'),
+                    React.createElement('p', null, 'Your Digital Parent Hub is now ready to help your family thrive in the digital world.'),
+                    React.createElement('p', null, 'Remember: your privacy is protected, and we\'re here to support positive habits.')
+                )
+            }
+        ];
+    }
 
     nextStep = () => {
         if (this.state.currentStep === 4) { // PIN step
@@ -111,7 +113,8 @@ class OnboardingWizard extends React.Component {
                 return;
             }
         }
-        if (this.state.currentStep < this.steps.length - 1) {
+        const steps = this.getSteps();
+        if (this.state.currentStep < steps.length - 1) {
             this.setState({ currentStep: this.state.currentStep + 1 });
         } else {
             this.completeOnboarding();
@@ -145,14 +148,15 @@ class OnboardingWizard extends React.Component {
 
     render() {
         const { currentStep } = this.state;
-        const step = this.steps[currentStep];
+        const steps = this.getSteps();
+        const step = steps[currentStep];
 
         return React.createElement('div', { className: 'onboarding-container' },
             React.createElement('div', { className: 'onboarding-card' },
                 React.createElement('div', { className: 'onboarding-header' },
                     React.createElement('h1', { className: 'onboarding-title' }, step.title),
                     React.createElement('div', { className: 'onboarding-progress' },
-                        React.createElement('div', { className: 'onboarding-progress-bar', style: { width: `${((currentStep + 1) / this.steps.length) * 100}%` } })
+                        React.createElement('div', { className: 'onboarding-progress-bar', style: { width: `${((currentStep + 1) / steps.length) * 100}%` } })
                     )
                 ),
                 React.createElement('div', { className: 'onboarding-body' }, step.content),
@@ -165,7 +169,7 @@ class OnboardingWizard extends React.Component {
                     React.createElement('button', {
                         onClick: this.nextStep,
                         className: 'btn btn-primary'
-                    }, currentStep === this.steps.length - 1 ? 'Finish' : 'Next')
+                    }, currentStep === steps.length - 1 ? 'Finish' : 'Next')
                 )
             )
         );
