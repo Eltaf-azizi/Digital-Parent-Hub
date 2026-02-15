@@ -1,15 +1,28 @@
+// For Electron main process, we need to require electron from its resources path
+// The electron module in node_modules returns the binary path, not the API
+// So we need to manually get the API from the electron binary's resources
+const path = require('path');
+const electronPath = path.join(__dirname, 'node_modules', 'electron', 'dist', 'electron.exe');
+
+// In newer Electron versions, we can use require('electron') but need to get the API differently
+// Let's check if there's a way to get the electron API
+let electron;
 try {
-  const electron = require('electron');
-  var app = electron.app;
-  var BrowserWindow = electron.BrowserWindow;
-  var ipcMain = electron.ipcMain;
-  var Notification = electron.Notification;
-  var dialog = electron.dialog;
+  // Try to get electron from the module
+  electron = require('electron');
+  // If it returns a string (path), we need the actual API
+  if (typeof electron === 'string') {
+    // The electron module returns the path - use globals
+    console.log('Electron path:', electron);
+  }
 } catch (e) {
-  console.error('This script must be run with Electron. Use "npm start" instead.');
-  process.exit(1);
+  console.error('Error loading electron:', e);
 }
-console.log('App object:', app);
+
+// In Electron main process, app, BrowserWindow etc are available as globals
+// Let's verify they're available
+console.log('Checking global app:', typeof app);
+
 require('dotenv').config();
 // Start the bundled Express server so renderer can fetch APIs at runtime
 try {
