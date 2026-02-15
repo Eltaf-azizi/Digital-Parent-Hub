@@ -1,31 +1,13 @@
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
-console.log('Electron:', electron);
-console.log('App:', app);
+// Simple test to check if electron works
+console.log('Testing electron...');
+console.log('App:', typeof app);
+console.log('BrowserWindow:', typeof BrowserWindow);
+console.log('process.versions.electron:', process.versions.electron);
 
-function createWindow() {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true
-    }
-  });
-
-  win.loadFile('public/index.html');
-}
-
-app.whenReady().then(createWindow);
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+// If this works, app should be defined
+if (typeof app !== 'undefined') {
+    console.log('SUCCESS: Electron is working!');
     app.quit();
-  }
-});
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
-});
+} else {
+    console.log('FAILED: app is not defined');
+}
