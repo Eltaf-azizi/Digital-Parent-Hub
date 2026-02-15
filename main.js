@@ -1,35 +1,46 @@
-// For Electron main process, we need to require electron from its resources path
-// The electron module in node_modules returns the binary path, not the API
-// So we need to manually get the API from the electron binary's resources
+// Get electron from its actual binary location
 const path = require('path');
-const electronPath = path.join(__dirname, 'node_modules', 'electron', 'dist', 'electron.exe');
+const electronBinary = path.join(__dirname, 'node_modules', 'electron', 'dist', 'electron.exe');
 
-// In newer Electron versions, we can use require('electron') but need to get the API differently
-// Let's check if there's a way to get the electron API
+// Try to load electron module differently - using require with the full path to get the API
+// In Electron, we need to load the electron binary as a module to get access to app, etc.
+// Let's try a workaround
 let electron;
 try {
-  // Try to get electron from the module
+  // First try loading electron the normal way
   electron = require('electron');
-  // If it returns a string (path), we need the actual API
+  // If it returns a string (the path), we need a different approach
   if (typeof electron === 'string') {
-    // The electron module returns the path - use globals
     console.log('Electron path:', electron);
+    // Try loading the electron resources/app module
+    const electronDir = path.dirname(electron);
+    const resourcesDir = path.join(electronDir, 'resources', 'app');
+    console.log('Resources dir:', resourcesDir);
   }
 } catch (e) {
   console.error('Error loading electron:', e);
 }
 
-// In Electron main process, app, BrowserWindow etc are available as globals
-// Let's verify they're available
-console.log('Checking global app:', typeof app);
+// The app, BrowserWindow, ipcMain, Notification, dialog should be available as globals
+// in the Electron main process. If not available, we'll define them from electron module.
+const app = global.app || (electron && electron.app);
+const BrowserWindow = global.BrowserWindow || (electron && electron.BrowserWindow);
+const ipcMain = global.ipcMain || (electron && electron.ipcMain);
+const Notification = global.Notification || (electron && electron.Notification);
+const dialog = global.dialog || (electron && electron.dialog);
+
+console.log('App available:', typeof app);
+console.log('BrowserWindow available:', typeof BrowserWindow);
 
 require('dotenv').config();
+
 // Start the bundled Express server so renderer can fetch APIs at runtime
 try {
   require('./server');
 } catch (e) {
   console.error('Could not start embedded server:', e);
 }
+
 const activeWin = require('active-win');
 const Database = require('./src/data/database');
 const Reports = require('./src/reports/reports');
@@ -511,69 +522,74 @@ function startActivityTracking() {
 
         if (!currentActivity || currentActivity.app_name !== appName) {
           // Start new activity
-          console.log(`[DEBUG] Starting new activity: ${appName}`);
           currentActivity = {
             app_name: appName,
             start_time: new Date().toISOString(),
-            category_id: otherCategoryId
+            category_id: otherCategoryId // Default to 'Other' category
           };
+          console.log(`[DEBUG] Started activity: ${appName}`);
         }
-      }).catch(error => {
-        console.error('Error in activity tracking:', error);
+      }).catch(err => {
+        console.error('[DEBUG] Error getting active window:', err);
       });
-    } catch (error) {
-      console.error('Error in activity tracking:', error);
+    } catch (err) {
+      console.error('[DEBUG] Error in activity tracking:', err);
     }
-  }, 1000); // Poll every 1 second
+  }, 5000); // Check every 5 seconds
 }
 
 function checkAlerts() {
- try {
-   const today = new Date();
-   const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
-   const tomorrow = new Date(today);
-   tomorrow.setDate(tomorrow.getDate() + 1);
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-   const activities = db.getActivities({
-     start_time: today.toISOString(),
-     end_time: tomorrow.toISOString()
-   });
+    const activities = db.getActivities({
+      start_time: today.toISOString(),
+      end_time: tomorrow.toISOString()
+    });
 
-   const totalTime = activities.reduce((sum, act) => sum + act.duration, 0);
+    const totalTime = activities.reduce((sum, act) => sum + act.duration, 0);
+    const categories = db.getCategories();
+    const categoryMap = {};
+    categories.forEach(cat => categoryMap[cat.id] = cat.name);
 
-   const categories = db.getCategories();
-   const studyCat = categories.find(c => c.name === 'Study');
-   let studyTime = 0;
-   if (studyCat) {
-     studyTime = activities.filter(act => act.category_id === studyCat.id).reduce((sum, act) => sum + act.duration, 0);
-   }
+    const categoryTimes = {};
+    activities.forEach(act => {
+      const catName = categoryMap[act.category_id] || 'Other';
+      categoryTimes[catName] = (categoryTimes[catName] || 0) + act.duration;
+    });
 
-   const screenLimit = parseInt(db.getSetting('daily_screen_limit')) || 28800;
-   const studyGoal = parseInt(db.getSetting('study_goal')) || 7200;
+    const studyTime = categoryTimes['Study'] || 0;
+    const studyGoal = parseInt(db.getSetting('study_goal')) || 7200;
+    const screenLimit = parseInt(db.getSetting('daily_screen_limit')) || 28800;
+    const todayStr = today.toISOString().split('T')[0];
 
-   const lastScreenAlert = db.getSetting('screen_alert_last_date');
-   const lastStudyAlert = db.getSetting('study_alert_last_date');
+    // Check screen time limit
+    if (totalTime >= screenLimit) {
+      const lastScreenAlert = db.getSetting('screen_alert_last_date');
+      if (lastScreenAlert !== todayStr) {
+        new Notification({
+          title: 'Screen Time Limit Reached',
+          body: 'You\'ve reached your daily screen time limit. Consider taking a break!',
+          silent: true
+        }).show();
+        db.setSetting('screen_alert_last_date', todayStr);
+      }
+    }
 
-   if (totalTime >= screenLimit && lastScreenAlert !== todayStr) {
-     new Notification({
-       title: 'Screen Time Limit Reached',
-       body: 'Great job! You\'ve reached your daily screen time limit. Time for a well-deserved break!',
-       silent: true
-     }).show();
-     db.setSetting('screen_alert_last_date', todayStr);
-   }
-
-   if (studyTime >= studyGoal && lastStudyAlert !== todayStr) {
-     new Notification({
-       title: 'Study Goal Achieved',
-       body: 'Congratulations! You\'ve achieved your study goal today. Keep up the fantastic work!',
-       silent: true
-     }).show();
-     db.setSetting('study_alert_last_date', todayStr);
-   }
- } catch (error) {
-   console.error('Error in checkAlerts:', error);
- }
+    if (studyTime >= studyGoal && lastStudyAlert !== todayStr) {
+      new Notification({
+        title: 'Study Goal Achieved',
+        body: 'Congratulations! You\'ve achieved your study goal today. Keep up the fantastic work!',
+        silent: true
+      }).show();
+      db.setSetting('study_alert_last_date', todayStr);
+    }
+  } catch (error) {
+    console.error('Error in checkAlerts:', error);
+  }
 }
 
 app.on('ready', createWindow);
