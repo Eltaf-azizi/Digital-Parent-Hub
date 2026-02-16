@@ -48,31 +48,30 @@ Additional modules:
 ## File Structure
 ```
 Digital-Parent-Hub/
-├── main/
-│   ├── main.js          # Electron main process
-│   └── preload.js       # Secure IPC preload script
-├── renderer/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/  # Reusable React components
-│   │   ├── pages/       # Dashboard, Reports, Settings pages
-│   │   ├── services/    # IPC communication services
-│   │   └── App.js
-│   └── package.json
-├── shared/
-│   ├── models/          # Data models and types
-│   └── utils/           # Common utilities
-├── database/
-│   ├── schema.sql       # Database schema
-│   ├── migrations/      # Database migrations
-│   └── dao.js           # Data access objects
-├── business-logic/
-│   ├── tracking.js      # Activity tracking logic
-│   ├── categorization.js # App categorization
-│   ├── reports.js       # Report generation
-│   ├── email.js         # Email service
-│   └── alerts.js        # Alert system
-├── package.json
+├── main.js                 # Electron main process
+├── preload.js              # Secure IPC preload script
+├── server.js              # Express server for API
+├── package.json           # Dependencies and build config
+├── src/
+│   ├── App.js             # React main component
+│   ├── ChildDashboard.js  # Child view with screen time, streaks, tips
+│   ├── ParentDashboard.js # Parent analytics dashboard
+│   ├── ReportsView.js     # Reports & report generation UI
+│   ├── OnboardingWizard.js # Setup wizard
+│   ├── Settings.js        # Configuration including app mappings
+│   ├── Dashboard.js       # Generic dashboard component
+│   ├── styles.css         # Styling with theme support
+│   ├── data/
+│   │   └── database.js    # Database operations with encryption
+│   ├── tracking/
+│   │   └── activityTracker.js # Activity tracking service
+│   ├── reports/
+│   │   └── reports.js     # Report generation (daily/weekly/monthly/yearly)
+│   ├── email/
+│   │   └── emailService.js # Email service & scheduling
+│   └── public/
+│       └── index.html     # Main HTML entry point
+├── test_*.js              # Test files
 └── README.md
 ```
 

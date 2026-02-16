@@ -335,7 +335,66 @@ app.post('/api/backup-database', requireAuth, (req, res) => {
 
 app.post('/api/restore-database', requireAuth, (req, res) => {
   try {
-    // For simplicity, assume file is uploaded, but since no file upload, just return success
+    const { backupPath } = req.body;
+    if (!backupPath) {
+      return res.status(400).json({ error: 'Backup path is required' });
+    }
+    db.restoreDatabase(backupPath, passphrase);
+    res.json({ success: true, message: 'Database restored successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// App Mapping endpoints
+app.get('/api/app-mappings', requireAuth, (req, res) => {
+  try {
+    const mappings = db.getAppMappings();
+    res.json(mappings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/app-mappings', requireAuth, (req, res) => {
+  try {
+    const { appName, categoryId } = req.body;
+    if (!appName || categoryId === undefined) {
+      return res.status(400).json({ error: 'App name and category ID are required' });
+    }
+    db.setAppMapping(appName, categoryId);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/app-mappings', requireAuth, (req, res) => {
+  try {
+    const { appName } = req.body;
+    if (!appName) {
+      return res.status(400).json({ error: 'App name is required' });
+    }
+    db.deleteAppMapping(appName);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Alert endpoints
+app.get('/api/alerts', requireAuth, (req, res) => {
+  try {
+    const alerts = db.getAlerts();
+    res.json(alerts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/alerts/clear', requireAuth, (req, res) => {
+  try {
+    db.clearOldAlerts(7);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

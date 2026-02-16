@@ -13,7 +13,8 @@ class App extends React.Component {
             checkingOnboarding: true,
             parentSession: false,
             sessionTimeout: null,
-            componentsLoaded: false
+            componentsLoaded: false,
+            refreshInterval: null
         };
     }
 
@@ -53,6 +54,17 @@ class App extends React.Component {
         } catch (error) {
             console.error('Error checking onboarding:', error);
             this.setState({ checkingOnboarding: false });
+        }
+        
+        // Auto-refresh data every 30 seconds
+        this.refreshInterval = setInterval(() => {
+            this.fetchData();
+        }, 30000);
+    }
+
+    componentWillUnmount() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
         }
     }
 

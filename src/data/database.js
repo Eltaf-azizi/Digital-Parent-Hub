@@ -10,7 +10,9 @@ class MyDatabase {
       activities: [],
       settings: {},
       reports: [],
-      smtpSettings: {}
+      smtpSettings: {},
+      appMappings: {},
+      alerts: []
     };
     this.passphrase = null;
   }
@@ -236,10 +238,113 @@ class MyDatabase {
       activities: [],
       settings: {},
       reports: [],
-      smtpSettings: {}
+      smtpSettings: {},
+      appMappings: {},
+      alerts: []
     };
     this.createDefaultData();
     this.saveDatabase();
+  }
+
+  // App to Category Mappings
+  getAppMappings() {
+    return this.data.appMappings || {};
+  }
+
+  setAppMapping(appName, categoryId) {
+    if (!this.data.appMappings) this.data.appMappings = {};
+    this.data.appMappings[appName.toLowerCase()] = categoryId;
+    this.saveDatabase();
+  }
+
+  deleteAppMapping(appName) {
+    if (this.data.appMappings) {
+      delete this.data.appMappings[appName.toLowerCase()];
+      this.saveDatabase();
+    }
+  }
+
+  getCategoryForApp(appName) {
+    const mappings = this.getAppMappings();
+    return mappings[appName.toLowerCase()] || null;
+  }
+
+  // Alerts Management
+  getAlerts() {
+    return this.data.alerts || [];
+  }
+
+  addAlert(alert) {
+    if (!this.data.alerts) this.data.alerts = [];
+    const id = Math.max(...this.data.alerts.map(a => a.id), 0) + 1;
+    this.data.alerts.push({ id, ...alert, created_at: new Date().toISOString() });
+    this.saveDatabase();
+    return id;
+  }
+
+  deleteAlert(id) {
+    if (this.data.alerts) {
+      this.data.alerts = this.data.alerts.filter(a => a.id !== id);
+      this.saveDatabase();
+    }
+  }
+
+  clearOldAlerts(daysOld = 7) {
+    if (!this.data.alerts) return;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - daysOld);
+    this.data.alerts = this.data.alerts.filter(a => new Date(a.created_at) > cutoff);
+    this.saveDatabase();
+  }
+
+  // Check and create alerts based on settings
+  checkAndCreateAlerts() {
+    const alerts = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const activities = this.getActivities({ start_time: today.toISOString(), end_time: tomorrow.toISOString() });
+    const totalTime = activities.reduce((sum, act) => sum + act.duration, 0);
+
+    const screenLimit = parseInt(this.getSetting('daily_screen_limit')) || 28800;
+    const studyGoal = parseInt(this.getSetting('study_goal')) || 7200;
+
+    const categories = this.getCategories();
+    const categoryMap = {};
+    categories.forEach(cat => categoryMap[cat.id] = cat.name);
+
+    let studyTime = 0;
+    activities.forEach(act => {
+      const catName = categoryMap[act.category_id] || 'Other';
+      if (catName === 'Study') studyTime += act.duration;
+    });
+
+    // Screen time alert
+    if (totalTime > screenLimit) {
+      const hours = Math.floor(totalTime / 3600);
+      const minutes = Math.floor((totalTime % 3600) / 60);
+      alerts.push({
+        type: 'screen_time',
+        message: `Screen time limit exceeded! You've used ${hours}h ${minutes}m today.`,
+        severity: 'warning'
+      });
+    }
+
+    // Study goal alert
+    if (studyTime < studyGoal && totalTime > 3600) {
+      const needed = Math.ceil((studyGoal - studyTime) / 60);
+      alerts.push({
+        type: 'study_goal',
+        message: `Study goal not met. ${needed} minutes more of study time needed.`,
+        severity: 'info'
+      });
+    }
+
+    // Add alerts to database
+    alerts.forEach(alert => this.addAlert(alert));
+    return alerts;
   }
 }
 

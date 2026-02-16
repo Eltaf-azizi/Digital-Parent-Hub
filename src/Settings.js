@@ -9,7 +9,10 @@ class Settings extends React.Component {
             smtp: { host: '', port: '', user: '', pass: '', from: '' },
             screenLimit: 28800,
             studyGoal: 7200,
-            loading: true
+            loading: true,
+            appMappings: {},
+            newAppName: '',
+            newAppCategory: ''
         };
     }
 
@@ -21,16 +24,34 @@ class Settings extends React.Component {
         try {
             const response = await fetch((window.API_BASE || '') + '/api/get-settings');
             const settings = await response.json();
+            
+            // Load app mappings
+            let appMappings = {};
+            try {
+                const mappingsResponse = await fetch((window.API_BASE || '') + '/api/app-mappings');
+                appMappings = await mappingsResponse.json();
+            } catch (e) {
+                console.log('App mappings not available');
+            }
+            
+            // Load saved theme from localStorage
+            const savedTheme = localStorage.getItem('theme') || settings.theme || 'light';
+            
             this.setState({
                 categories: settings.categories || [],
-                theme: settings.theme || 'light',
+                theme: savedTheme,
                 reportFrequency: settings.reportFrequency || { daily: true, weekly: false, monthly: false, yearly: false },
                 emailRecipient: settings.emailRecipient || '',
                 smtp: settings.smtp || { host: '', port: '', user: '', pass: '', from: '' },
                 screenLimit: settings.screenLimit || 28800,
                 studyGoal: settings.studyGoal || 7200,
-                loading: false
+                loading: false,
+                appMappings: appMappings
             });
+            
+            // Apply theme on load
+            document.body.className = savedTheme;
+            document.body.setAttribute('data-theme', savedTheme);
         } catch (error) {
             console.error('Error loading settings:', error);
             this.setState({ loading: false });
@@ -90,6 +111,8 @@ class Settings extends React.Component {
     handleThemeChange = (theme) => {
         this.setState({ theme });
         document.body.className = theme;
+        document.body.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
     };
 
     handleReportFrequencyChange = (freq) => {
@@ -178,6 +201,50 @@ class Settings extends React.Component {
         }
     };
 
+    handleAddAppMapping = async () => {
+        const { newAppName, newAppCategory, appMappings } = this.state;
+        if (!newAppName || !newAppCategory) {
+            alert('Please enter app name and select a category');
+            return;
+        }
+        try {
+            await fetch((window.API_BASE || '') + '/api/app-mappings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ appName: newAppName, categoryId: parseInt(newAppCategory) })
+            });
+            this.setState({
+                appMappings: { ...appMappings, [newAppName.toLowerCase()]: parseInt(newAppCategory) },
+                newAppName: '',
+                newAppCategory: ''
+            });
+            alert('App mapping added!');
+        } catch (error) {
+            console.error('Error adding app mapping:', error);
+            alert('Failed to add app mapping');
+        }
+    };
+
+    handleDeleteAppMapping = async (appName) => {
+        if (confirm(`Delete mapping for ${appName}?`)) {
+            try {
+                await fetch((window.API_BASE || '') + '/api/app-mappings', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ appName })
+                });
+                const { appMappings } = this.state;
+                const newMappings = { ...appMappings };
+                delete newMappings[appName.toLowerCase()];
+                this.setState({ appMappings: newMappings });
+                alert('App mapping deleted!');
+            } catch (error) {
+                console.error('Error deleting app mapping:', error);
+                alert('Failed to delete app mapping');
+            }
+        }
+    };
+
     render() {
         if (this.state.loading) {
             return React.createElement('div', null, 'Loading settings...');
@@ -205,6 +272,49 @@ class Settings extends React.Component {
                             )
                         )
                     )
+                )
+            ),
+
+            // App Mappings
+            React.createElement('div', { className: 'settings-section' },
+                React.createElement('h2', null, 'App to Category Mappings'),
+                React.createElement('p', { className: 'text-muted' }, 'Map applications to categories for automatic categorization'),
+                React.createElement('div', { className: 'form-group' },
+                    React.createElement('input', {
+                        type: 'text',
+                        placeholder: 'App Name (e.g., Chrome)',
+                        value: this.state.newAppName,
+                        onChange: (e) => this.setState({ newAppName: e.target.value }),
+                        className: 'form-input'
+                    })
+                ),
+                React.createElement('div', { className: 'form-group' },
+                    React.createElement('select', {
+                        value: this.state.newAppCategory,
+                        onChange: (e) => this.setState({ newAppCategory: e.target.value }),
+                        className: 'form-input'
+                    },
+                        React.createElement('option', { value: '' }, 'Select Category'),
+                        this.state.categories.map(cat =>
+                            React.createElement('option', { key: cat.id, value: cat.id }, cat.name)
+                        )
+                    )
+                ),
+                React.createElement('button', { onClick: this.handleAddAppMapping, className: 'btn btn-primary mb-3' }, 'Add Mapping'),
+                
+                // Display existing mappings
+                Object.keys(this.state.appMappings).length > 0 && React.createElement('div', { className: 'app-mappings-list' },
+                    React.createElement('h3', null, 'Current Mappings'),
+                    Object.entries(this.state.appMappings).map(([appName, categoryId]) => {
+                        const category = this.state.categories.find(c => c.id === categoryId);
+                        return React.createElement('div', { key: appName, className: 'mapping-item' },
+                            React.createElement('span', null, appName, ' -> ', category ? category.name : 'Unknown'),
+                            React.createElement('button', { 
+                                onClick: () => this.handleDeleteAppMapping(appName), 
+                                className: 'btn btn-sm btn-danger' 
+                            }, 'Delete')
+                        );
+                    })
                 )
             ),
 

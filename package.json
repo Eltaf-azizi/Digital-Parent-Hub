@@ -38,6 +38,9 @@
       "!*.md",
       "!test_*"
     ],
+    "extraMetadata": {
+      "main": "main.js"
+    },
     "win": {
       "target": "nsis"
     },

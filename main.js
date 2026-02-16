@@ -45,11 +45,13 @@ const activeWin = require('active-win');
 const Database = require('./src/data/database');
 const Reports = require('./src/reports/reports');
 const EmailService = require('./src/email/emailService');
+const ActivityTracker = require('./src/tracking/activityTracker');
 
 let mainWindow;
 let db;
 let reports;
 let emailService;
+let activityTracker;
 let currentActivity = null;
 let otherCategoryId;
 const passphrase = process.env.DATABASE_PASSPHRASE || 'digitalparent';
@@ -60,7 +62,8 @@ async function createWindow() {
     height: 600,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      preload: path.join(__dirname, 'preload.js')
     }
   });
 
@@ -88,6 +91,10 @@ async function createWindow() {
   // Initialize reports and email service
   reports = new Reports(db);
   emailService = new EmailService(db, reports);
+  
+  // Initialize activity tracker
+  activityTracker = new ActivityTracker(db);
+  activityTracker.startTracking();
 
   // Set default alert settings
   const defaultScreenLimit = 28800; // 8 hours in seconds
@@ -421,6 +428,75 @@ async function createWindow() {
     }
   });
 
+  // Activity Tracking IPC handlers
+  ipcMain.handle('start-tracking', () => {
+    if (activityTracker) {
+      activityTracker.startTracking();
+      return { success: true };
+    }
+    return { success: false, error: 'Activity tracker not initialized' };
+  });
+
+  ipcMain.handle('stop-tracking', () => {
+    if (activityTracker) {
+      activityTracker.stopTracking();
+      return { success: true };
+    }
+    return { success: false, error: 'Activity tracker not initialized' };
+  });
+
+  ipcMain.handle('get-tracking-status', () => {
+    if (activityTracker) {
+      return activityTracker.getStatus();
+    }
+    return { isTracking: false };
+  });
+
+  // App Mapping IPC handlers
+  ipcMain.handle('get-app-mappings', () => {
+    return db.getAppMappings();
+  });
+
+  ipcMain.handle('set-app-mapping', (event, appName, categoryId) => {
+    db.setAppMapping(appName, categoryId);
+    return { success: true };
+  });
+
+  ipcMain.handle('delete-app-mapping', (event, appName) => {
+    db.deleteAppMapping(appName);
+    return { success: true };
+  });
+
+  // Alert IPC handlers
+  ipcMain.handle('get-alerts', () => {
+    return db.getAlerts();
+  });
+
+  ipcMain.handle('clear-alerts', () => {
+    // Clear alerts older than 7 days
+    db.clearOldAlerts(7);
+    return { success: true };
+  });
+
+  // Window control handlers
+  ipcMain.handle('minimize-window', () => {
+    if (mainWindow) mainWindow.minimize();
+  });
+
+  ipcMain.handle('maximize-window', () => {
+    if (mainWindow) {
+      if (mainWindow.isMaximized()) {
+        mainWindow.unmaximize();
+      } else {
+        mainWindow.maximize();
+      }
+    }
+  });
+
+  ipcMain.handle('close-window', () => {
+    if (mainWindow) mainWindow.close();
+  });
+
   // Ensure 'Other' category exists
   const categories = db.getCategories();
   let otherCat = categories.find(c => c.name === 'Other');
@@ -493,99 +569,30 @@ function scheduleReports() {
 }
 
 function startActivityTracking() {
-  console.log('[DEBUG] Starting activity tracking...');
-  setInterval(() => {
-    try {
-      activeWin().then(active => {
-        if (!active) {
-          console.log('[DEBUG] No active window detected');
-          return;
-        }
-
-        const appName = active.owner.name || 'Unknown';
-        console.log(`[DEBUG] Active app: ${appName}`);
-
-        if (currentActivity && currentActivity.app_name !== appName) {
-          // End previous activity
-          const endTime = new Date().toISOString();
-          const duration = Math.floor((new Date(endTime) - new Date(currentActivity.start_time)) / 1000);
-          console.log(`[DEBUG] Ending activity: ${currentActivity.app_name}, duration: ${duration}s`);
-          db.addActivity({
-            app_name: currentActivity.app_name,
-            start_time: currentActivity.start_time,
-            end_time: endTime,
-            duration,
-            category_id: currentActivity.category_id
-          });
-          console.log(`[DEBUG] Activity logged: ${currentActivity.app_name}`);
-        }
-
-        if (!currentActivity || currentActivity.app_name !== appName) {
-          // Start new activity
-          currentActivity = {
-            app_name: appName,
-            start_time: new Date().toISOString(),
-            category_id: otherCategoryId // Default to 'Other' category
-          };
-          console.log(`[DEBUG] Started activity: ${appName}`);
-        }
-      }).catch(err => {
-        console.error('[DEBUG] Error getting active window:', err);
-      });
-    } catch (err) {
-      console.error('[DEBUG] Error in activity tracking:', err);
-    }
-  }, 5000); // Check every 5 seconds
+  console.log('[DEBUG] Starting activity tracking with ActivityTracker...');
+  // Use the ActivityTracker class
+  if (activityTracker) {
+    activityTracker.startTracking();
+  }
 }
 
 function checkAlerts() {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const activities = db.getActivities({
-      start_time: today.toISOString(),
-      end_time: tomorrow.toISOString()
-    });
-
-    const totalTime = activities.reduce((sum, act) => sum + act.duration, 0);
-    const categories = db.getCategories();
-    const categoryMap = {};
-    categories.forEach(cat => categoryMap[cat.id] = cat.name);
-
-    const categoryTimes = {};
-    activities.forEach(act => {
-      const catName = categoryMap[act.category_id] || 'Other';
-      categoryTimes[catName] = (categoryTimes[catName] || 0) + act.duration;
-    });
-
-    const studyTime = categoryTimes['Study'] || 0;
-    const studyGoal = parseInt(db.getSetting('study_goal')) || 7200;
-    const screenLimit = parseInt(db.getSetting('daily_screen_limit')) || 28800;
-    const todayStr = today.toISOString().split('T')[0];
-
-    // Check screen time limit
-    if (totalTime >= screenLimit) {
-      const lastScreenAlert = db.getSetting('screen_alert_last_date');
-      if (lastScreenAlert !== todayStr) {
-        new Notification({
-          title: 'Screen Time Limit Reached',
-          body: 'You\'ve reached your daily screen time limit. Consider taking a break!',
-          silent: true
-        }).show();
-        db.setSetting('screen_alert_last_date', todayStr);
-      }
-    }
-
-    if (studyTime >= studyGoal && lastStudyAlert !== todayStr) {
-      new Notification({
-        title: 'Study Goal Achieved',
-        body: 'Congratulations! You\'ve achieved your study goal today. Keep up the fantastic work!',
-        silent: true
-      }).show();
-      db.setSetting('study_alert_last_date', todayStr);
+    // Use the new checkAndCreateAlerts method from database
+    const newAlerts = db.checkAndCreateAlerts();
+    
+    // Show desktop notifications for new alerts
+    if (newAlerts && newAlerts.length > 0) {
+      newAlerts.forEach(alert => {
+        try {
+          new Notification({
+            title: 'Digital Parent Hub - Alert',
+            body: alert.message
+          }).show();
+        } catch (e) {
+          console.log('Notification not available:', e.message);
+        }
+      });
     }
   } catch (error) {
     console.error('Error in checkAlerts:', error);
