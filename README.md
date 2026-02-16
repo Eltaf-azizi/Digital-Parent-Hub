@@ -115,7 +115,7 @@ Digital Parent Hub is committed to protecting your privacy. We collect only the 
 - You have full control over your data
 
 ### Your Rights
-- Export or backup all your data at any time
+- Export or back up all your data at any time
 - Delete all data permanently
 - Access privacy policy within the app during onboarding
 
@@ -145,7 +145,7 @@ Digital-Parent-Hub/
 ### New Report Features
 
 #### Report Generation
-Reports are generated on-demand or automatically based on configured frequency. Each report includes:
+Reports are generated on demand or automatically based on a configured frequency. Each report includes:
 - **Total Screen Time**: Aggregate time spent across all categories
 - **Category Breakdown**: Time distribution across activity categories
 - **Productivity Score**: Percentage of time spent on Study activities
@@ -166,13 +166,13 @@ Configure automatic report delivery:
 2. Enter recipient email address
 3. Configure SMTP settings (Settings → Email Configuration)
 4. Select report frequencies (daily, weekly, monthly, yearly)
-5. Reports will be automatically generated and emailed based on schedule
+5. Reports will be automatically generated and emailed based on the schedule
 
 #### Report API Endpoints
 - `POST /api/generate-report` - Generate a new report
 - `GET /api/reports` - Retrieve stored reports
 - `POST /api/store-report` - Save generated report
-- `POST /api/send-report-email` - Email a report to recipient
+- `POST /api/send-report-email` - Email a report to the recipient
 
 #### IPC Handlers (Electron)
 - `ipcMain.handle('generate-report', type, startDate)` - Generate report
@@ -194,7 +194,7 @@ The app includes sample data (12 days of activity) for testing reports:
 ```bash
 npm start
 # Navigate to Parent Dashboard (PIN: 1234)
-# Click "Reports" button
+# Click the "Reports" button
 # Select report type (Daily/Weekly/Monthly)
 # Click "Generate Report"
 # View report details and trends
@@ -206,7 +206,7 @@ npm start
 # Build for current platform
 npm run dist
 
-# Build for all platforms (requires appropriate build environment)
+# Build for all platforms (requires an appropriate build environment)
 npm run build
 ```
 
@@ -236,9 +236,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - UI components with [React](https://reactjs.org/)
 - Charts with [Recharts](https://recharts.org/)
 
-## 📞 Support
-
-If you have questions or need help:
-- Check the [Issues](https://github.com/yourusername/digital-parent-hub/issues) page
-- Review the documentation
-- Contact the maintainers
