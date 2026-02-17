@@ -2,38 +2,38 @@
 const path = require('path');
 
 // For Electron, we need to use the electron module directly
-// In newer Electron versions, require('electron') returns the electron object properly
-// when running via electron command
+// In some environments, require('electron') returns a string path instead of module
 let app, BrowserWindow, ipcMain, Notification, dialog;
 
-// Try to get electron modules - these are available as globals in Electron main process
-try {
-  // Try using global electron object first
-  if (typeof global !== 'undefined' && global.electron) {
-    ({ app, BrowserWindow, ipcMain, Notification, dialog } = global.electron);
-  }
-  
-  // If not available, try requiring electron
-  if (!app) {
-    const electron = require('electron');
-    if (typeof electron === 'object' && electron.app) {
-      ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
+function loadElectron() {
+  try {
+    let electron = require('electron');
+    
+    // Handle when electron is returned as a string path
+    if (typeof electron === 'string') {
+      console.log('Electron as string path:', electron);
+      // Try to load electron from the resources app path
+      const resourcesAppPath = path.join(path.dirname(electron), 'resources', 'app', 'node_modules', 'electron');
+      try {
+        electron = require(resourcesAppPath);
+      } catch (e2) {
+        // Try direct path
+        electron = require(path.join(__dirname, 'node_modules', 'electron'));
+      }
     }
+    
+    if (electron && electron.app) {
+      ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
+      return true;
+    }
+  } catch (e) {
+    console.error('Error loading electron:', e);
   }
-} catch (e) {
-  console.error('Error loading electron:', e);
+  return false;
 }
 
-// If still not loaded, try one more time with the path
-if (!app) {
-  try {
-    const electronPath = path.join(__dirname, 'node_modules', 'electron');
-    const electron = require(electronPath);
-    ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
-  } catch (e) {
-    console.error('Final electron load attempt failed:', e);
-  }
-}
+// Try loading electron
+loadElectron();
 
 console.log('App available:', typeof app);
 console.log('BrowserWindow available:', typeof BrowserWindow);
