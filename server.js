@@ -310,10 +310,22 @@ app.post('/api/delete-category', requireAuth, (req, res) => {
 app.post('/api/export-data', requireAuth, (req, res) => {
   try {
     const { format } = req.body;
-    const data = db.exportData(format);
-    res.setHeader('Content-Disposition', `attachment; filename=data.${format}`);
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.send(data);
+    
+    if (format === 'pdf') {
+      // PDF export returns a buffer
+      db.exportData(format).then(pdfBuffer => {
+        res.setHeader('Content-Disposition', 'attachment; filename=data.pdf');
+        res.setHeader('Content-Type', 'application/pdf');
+        res.send(pdfBuffer);
+      }).catch(err => {
+        res.status(500).json({ error: err.message });
+      });
+    } else {
+      const data = db.exportData(format);
+      res.setHeader('Content-Disposition', `attachment; filename=data.${format}`);
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.send(data);
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

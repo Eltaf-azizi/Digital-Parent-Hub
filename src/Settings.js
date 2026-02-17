@@ -129,26 +129,33 @@ class Settings extends React.Component {
 
     handleExport = async (format) => {
         try {
-            if (format === 'pdf') {
-                alert('PDF export is not yet implemented. Please use JSON or CSV.');
-                return;
-            }
             const response = await fetch((window.API_BASE || '') + '/api/export-data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ format })
             });
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `digital-parent-hub-export.${format}`;
-            a.click();
-            window.URL.revokeObjectURL(url);
+            
+            if (format === 'pdf') {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `digital-parent-hub-export.pdf`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            } else {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `digital-parent-hub-export.${format}`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            }
             alert('Data exported successfully!');
         } catch (error) {
             console.error('Export error:', error);
-            alert('Export failed');
+            alert('Export failed: ' + error.message);
         }
     };
 
@@ -394,6 +401,7 @@ class Settings extends React.Component {
                 React.createElement('h2', null, 'Data Export'),
                 React.createElement('div', { className: 'd-flex gap-md' },
                     React.createElement('button', { onClick: () => this.handleExport('json'), className: 'btn btn-secondary' }, 'Export as JSON'),
+                    React.createElement('button', { onClick: () => this.handleExport('csv'), className: 'btn btn-secondary' }, 'Export as CSV'),
                     React.createElement('button', { onClick: () => this.handleExport('pdf'), className: 'btn btn-secondary' }, 'Export as PDF')
                 )
             ),

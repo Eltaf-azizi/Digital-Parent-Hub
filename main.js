@@ -322,17 +322,29 @@ async function createWindow() {
     }
   });
 
-  ipcMain.handle('export-data', (event, format) => {
-    const data = db.exportData(format);
-    const result = dialog.showSaveDialogSync(mainWindow, {
-      title: `Export data as ${format.toUpperCase()}`,
-      filters: [{ name: format.toUpperCase(), extensions: [format] }]
-    });
-    if (result) {
-      require('fs').writeFileSync(result, data);
-      return result;
+  ipcMain.handle('export-data', async (event, format) => {
+    try {
+      let data;
+      
+      if (format === 'pdf') {
+        data = await db.exportData(format);
+      } else {
+        data = db.exportData(format);
+      }
+      
+      const result = dialog.showSaveDialogSync(mainWindow, {
+        title: `Export data as ${format.toUpperCase()}`,
+        filters: [{ name: format.toUpperCase(), extensions: [format] }]
+      });
+      if (result) {
+        require('fs').writeFileSync(result, data);
+        return result;
+      }
+      return null;
+    } catch (error) {
+      console.error('Export error:', error);
+      throw error;
     }
-    return null;
   });
 
   ipcMain.handle('backup-database', () => {

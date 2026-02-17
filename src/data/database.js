@@ -227,9 +227,12 @@ class MyDatabase {
         csv.push(`${act.id},${act.app_name},${act.start_time},${act.end_time},${act.duration},${act.category_id}`);
       });
       return csv.join('\n');
+    } else if (format === 'pdf') {
+      return this.exportPDF();
     }
     return JSON.stringify(data);
   }
+
 
   // Delete all data
   deleteAllData() {
