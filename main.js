@@ -1,33 +1,39 @@
-// Get electron from its actual binary location
+// Electron main process
 const path = require('path');
-const electronBinary = path.join(__dirname, 'node_modules', 'electron', 'dist', 'electron.exe');
 
-// Try to load electron module differently - using require with the full path to get the API
-// In Electron, we need to load the electron binary as a module to get access to app, etc.
-// Let's try a workaround
-let electron;
+// For Electron, we need to use the electron module directly
+// In newer Electron versions, require('electron') returns the electron object properly
+// when running via electron command
+let app, BrowserWindow, ipcMain, Notification, dialog;
+
+// Try to get electron modules - these are available as globals in Electron main process
 try {
-  // First try loading electron the normal way
-  electron = require('electron');
-  // If it returns a string (the path), we need a different approach
-  if (typeof electron === 'string') {
-    console.log('Electron path:', electron);
-    // Try loading the electron resources/app module
-    const electronDir = path.dirname(electron);
-    const resourcesDir = path.join(electronDir, 'resources', 'app');
-    console.log('Resources dir:', resourcesDir);
+  // Try using global electron object first
+  if (typeof global !== 'undefined' && global.electron) {
+    ({ app, BrowserWindow, ipcMain, Notification, dialog } = global.electron);
+  }
+  
+  // If not available, try requiring electron
+  if (!app) {
+    const electron = require('electron');
+    if (typeof electron === 'object' && electron.app) {
+      ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
+    }
   }
 } catch (e) {
   console.error('Error loading electron:', e);
 }
 
-// The app, BrowserWindow, ipcMain, Notification, dialog should be available as globals
-// in the Electron main process. If not available, we'll define them from electron module.
-const app = global.app || (electron && electron.app);
-const BrowserWindow = global.BrowserWindow || (electron && electron.BrowserWindow);
-const ipcMain = global.ipcMain || (electron && electron.ipcMain);
-const Notification = global.Notification || (electron && electron.Notification);
-const dialog = global.dialog || (electron && electron.dialog);
+// If still not loaded, try one more time with the path
+if (!app) {
+  try {
+    const electronPath = path.join(__dirname, 'node_modules', 'electron');
+    const electron = require(electronPath);
+    ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
+  } catch (e) {
+    console.error('Final electron load attempt failed:', e);
+  }
+}
 
 console.log('App available:', typeof app);
 console.log('BrowserWindow available:', typeof BrowserWindow);
