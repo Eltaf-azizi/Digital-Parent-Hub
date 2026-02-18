@@ -1,39 +1,37 @@
 // Electron main process
 const path = require('path');
 
-// For Electron, we need to use the electron module directly
-// In some environments, require('electron') returns a string path instead of module
+// In Electron, app and BrowserWindow should be available as globals
+// But we need to get them from the electron module in this setup
 let app, BrowserWindow, ipcMain, Notification, dialog;
 
-function loadElectron() {
-  try {
-    let electron = require('electron');
-    
-    // Handle when electron is returned as a string path
-    if (typeof electron === 'string') {
-      console.log('Electron as string path:', electron);
-      // Try to load electron from the resources app path
-      const resourcesAppPath = path.join(path.dirname(electron), 'resources', 'app', 'node_modules', 'electron');
-      try {
-        electron = require(resourcesAppPath);
-      } catch (e2) {
-        // Try direct path
-        electron = require(path.join(__dirname, 'node_modules', 'electron'));
-      }
-    }
-    
-    if (electron && electron.app) {
-      ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
-      return true;
-    }
-  } catch (e) {
-    console.error('Error loading electron:', e);
+// Try loading electron from the correct path
+const electronPath = path.join(__dirname, 'node_modules', 'electron', 'dist', 'resources', 'app');
+console.log('Electron path:', electronPath);
+
+try {
+  // Try to require electron from the electron package
+  const electron = require(electronPath);
+  console.log('Electron module:', typeof electron);
+  if (electron && electron.app) {
+    ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
   }
-  return false;
+} catch (e) {
+  console.log('Error loading electron from path:', e.message);
 }
 
-// Try loading electron
-loadElectron();
+// Also try the standard require('electron')
+if (!app) {
+  try {
+    const electron = require('electron');
+    console.log('Standard electron:', typeof electron);
+    if (typeof electron === 'object' && electron.app) {
+      ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
+    }
+  } catch (e) {
+    console.log('Standard require electron failed:', e.message);
+  }
+}
 
 console.log('App available:', typeof app);
 console.log('BrowserWindow available:', typeof BrowserWindow);
