@@ -1,38 +1,29 @@
 // Electron main process
 const path = require('path');
 
-// In Electron, app and BrowserWindow should be available as globals
-// But we need to get them from the electron module in this setup
+// This is the standard way - require('electron') should give us the module
+// But if it returns a string, we'll handle that case
 let app, BrowserWindow, ipcMain, Notification, dialog;
 
-// Try loading electron from the correct path
-const electronPath = path.join(__dirname, 'node_modules', 'electron', 'dist', 'resources', 'app');
-console.log('Electron path:', electronPath);
-
 try {
-  // Try to require electron from the electron package
-  const electron = require(electronPath);
-  console.log('Electron module:', typeof electron);
-  if (electron && electron.app) {
+  const electron = require('electron');
+  if (typeof electron === 'object' && electron.app) {
     ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
+  } else if (typeof electron === 'string') {
+    // If require('electron') returns a string path, we need to handle this
+    // This happens when running outside Electron context
+    console.log('Warning: require(electron) returned a path instead of module');
+    console.log('This might be a Node.js context issue');
   }
 } catch (e) {
-  console.log('Error loading electron from path:', e.message);
+  console.log('Error requiring electron:', e.message);
 }
 
-// Also try the standard require('electron')
-if (!app) {
-  try {
-    const electron = require('electron');
-    console.log('Standard electron:', typeof electron);
-    if (typeof electron === 'object' && electron.app) {
-      ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
-    }
-  } catch (e) {
-    console.log('Standard require electron failed:', e.message);
-  }
-}
-
+// Check for process.versions.electron to verify we're in Electron
+const isElectron = process.versions && process.versions.electron;
+console.log('Running in Electron:', !!isElectron);
+console.log('Electron version:', process.versions.electron);
+console.log('Node version:', process.versions.node);
 console.log('App available:', typeof app);
 console.log('BrowserWindow available:', typeof BrowserWindow);
 
