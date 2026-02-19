@@ -1,57 +1,69 @@
 // Electron main process
 const path = require('path');
-const { createRequire } = require('module');
+const fs = require('fs');
 
-// Use createRequire to load electron as a module, not as a path
-const require2 = createRequire(__filename);
-
+// The electron npm package has a specific structure
+// Let's find and load electron properly
 let app, BrowserWindow, ipcMain, Notification, dialog;
 
-// Try loading electron properly
+// Try multiple approaches to get electron
+const electronPath = path.join(__dirname, 'node_modules', 'electron', 'dist', 'resources', 'app.asar.unpacked', 'node_modules', 'electron');
+const electronPath2 = path.join(__dirname, 'node_modules', 'electron', 'dist', 'resources', 'app', 'node_modules', 'electron');
+
+console.log('Checking paths...');
+console.log('Path 1:', electronPath, 'exists:', fs.existsSync(electronPath));
+console.log('Path 2:', electronPath2, 'exists:', fs.existsSync(electronPath2));
+
+// Let's try loading from the dist folder directly
 try {
-  // Method 1: Use createRequire
-  const electron = require2('electron');
-  console.log('createRequire electron type:', typeof electron);
-  if (electron && typeof electron === 'object' && electron.app) {
-    ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
-    console.log('Loaded electron via createRequire');
+  // In Electron, the modules are in different locations
+  // Let's try to require from the asar
+  const asarPath = path.join(__dirname, 'node_modules', 'electron', 'dist', 'resources', 'app.asar');
+  console.log('asar exists:', fs.existsSync(asarPath));
+  
+  // Try to find where electron modules actually are
+  const distPath = path.join(__dirname, 'node_modules', 'electron', 'dist');
+  if (fs.existsSync(distPath)) {
+    const distContents = fs.readdirSync(distPath);
+    console.log('dist contents:', distContents.slice(0, 10));
   }
-} catch (e) {
-  console.log('createRequire failed:', e.message);
+} catch(e) {
+  console.log('Error checking paths:', e.message);
 }
 
-// Method 2: Try loading from electron's internal modules
-if (!app) {
-  try {
-    // In Electron, we can sometimes access modules via process
-    const electronPath = process.resourcesPath;
-    console.log('Resources path:', electronPath);
-  } catch (e) {
-    console.log('Resource path error:', e.message);
+// Since we're in Electron, let's check if we can access electron via process.binding
+// In older Electron this worked, but it might not in newer versions
+try {
+  if (process.binding) {
+    console.log('process.binding is available');
   }
+} catch(e) {
+  console.log('process.binding error:', e.message);
 }
 
-// Method 3: Check if we have a different way to access electron
-if (!app && process.versions.electron) {
-  console.log('Running in Electron', process.versions.electron);
-  // In Electron, there's often a way to get electron from the preload
-  // But we can't do that in main process
+// Let's try yet another approach - use require with the full path to electron's index.js
+try {
+  // The electron package has an index.js that returns the path
+  // We need to manually load the electron module from its internal location
   
-  // Let's try to use a workaround - load from node_modules/electron/dist/resources/app.asar
-  // Actually, let's just wait and see if there's another way
+  // In the electron npm package, the actual electron module is in the dist folder
+  // But we can't directly require it because it's a native module
   
-  // Try loading electron's internal module
-  try {
-    const electronModule = require('electron');
-    console.log('electron module type:', typeof electronModule);
-    console.log('electron module value:', electronModule);
-  } catch(e) {
-    console.log('Error:', e);
+  // Let's check if there's an electron.asar or similar
+  const appPath = path.join(__dirname, 'node_modules', 'electron', 'dist', 'resources', 'app');
+  console.log('app path exists:', fs.existsSync(appPath));
+  
+  if (fs.existsSync(appPath)) {
+    const appContents = fs.readdirSync(appPath);
+    console.log('app contents:', appContents.slice(0, 10));
   }
+} catch(e) {
+  console.log('Error:', e.message);
 }
 
 console.log('App available:', typeof app);
 console.log('BrowserWindow available:', typeof BrowserWindow);
+console.log('process.versions.electron:', process.versions.electron);
 
 require('dotenv').config();
 
