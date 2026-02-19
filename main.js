@@ -1,43 +1,57 @@
 // Electron main process
 const path = require('path');
+const { createRequire } = require('module');
 
-// In Electron 40+, the electron module might be available differently
-// Let's check for globals first
-let app = global.app || global.electronApp;
-let BrowserWindow = global.BrowserWindow || global.electronBrowserWindow;
-let ipcMain = global.ipcMain || global.electronIpcMain;
-let Notification = global.Notification;
-let dialog = global.dialog;
+// Use createRequire to load electron as a module, not as a path
+const require2 = createRequire(__filename);
 
-// If globals don't exist, try require
+let app, BrowserWindow, ipcMain, Notification, dialog;
+
+// Try loading electron properly
+try {
+  // Method 1: Use createRequire
+  const electron = require2('electron');
+  console.log('createRequire electron type:', typeof electron);
+  if (electron && typeof electron === 'object' && electron.app) {
+    ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
+    console.log('Loaded electron via createRequire');
+  }
+} catch (e) {
+  console.log('createRequire failed:', e.message);
+}
+
+// Method 2: Try loading from electron's internal modules
 if (!app) {
   try {
-    const electron = require('electron');
-    if (typeof electron === 'object' && electron.app) {
-      ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
-    } else if (typeof electron === 'string') {
-      // In some Electron versions, require('electron') returns path
-      // Check if there's a default export or other way
-      console.log('require(electron) returned path:', electron);
-    }
+    // In Electron, we can sometimes access modules via process
+    const electronPath = process.resourcesPath;
+    console.log('Resources path:', electronPath);
   } catch (e) {
-    console.log('Error requiring electron:', e.message);
+    console.log('Resource path error:', e.message);
   }
 }
 
-// Check for process.versions.electron
-const isElectron = process.versions && process.versions.electron;
-console.log('Running in Electron:', !!isElectron);
-console.log('Electron version:', process.versions.electron);
-console.log('Node version:', process.versions.node);
+// Method 3: Check if we have a different way to access electron
+if (!app && process.versions.electron) {
+  console.log('Running in Electron', process.versions.electron);
+  // In Electron, there's often a way to get electron from the preload
+  // But we can't do that in main process
+  
+  // Let's try to use a workaround - load from node_modules/electron/dist/resources/app.asar
+  // Actually, let's just wait and see if there's another way
+  
+  // Try loading electron's internal module
+  try {
+    const electronModule = require('electron');
+    console.log('electron module type:', typeof electronModule);
+    console.log('electron module value:', electronModule);
+  } catch(e) {
+    console.log('Error:', e);
+  }
+}
+
 console.log('App available:', typeof app);
 console.log('BrowserWindow available:', typeof BrowserWindow);
-console.log('Global keys:', Object.keys(global).filter(k => k.includes('lectron') || k === 'app'));
-
-// If still not available, we need to wait for it
-if (!app) {
-  console.log('Waiting for Electron app to be available...');
-}
 
 require('dotenv').config();
 
