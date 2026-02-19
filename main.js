@@ -1,31 +1,43 @@
 // Electron main process
 const path = require('path');
 
-// This is the standard way - require('electron') should give us the module
-// But if it returns a string, we'll handle that case
-let app, BrowserWindow, ipcMain, Notification, dialog;
+// In Electron 40+, the electron module might be available differently
+// Let's check for globals first
+let app = global.app || global.electronApp;
+let BrowserWindow = global.BrowserWindow || global.electronBrowserWindow;
+let ipcMain = global.ipcMain || global.electronIpcMain;
+let Notification = global.Notification;
+let dialog = global.dialog;
 
-try {
-  const electron = require('electron');
-  if (typeof electron === 'object' && electron.app) {
-    ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
-  } else if (typeof electron === 'string') {
-    // If require('electron') returns a string path, we need to handle this
-    // This happens when running outside Electron context
-    console.log('Warning: require(electron) returned a path instead of module');
-    console.log('This might be a Node.js context issue');
+// If globals don't exist, try require
+if (!app) {
+  try {
+    const electron = require('electron');
+    if (typeof electron === 'object' && electron.app) {
+      ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
+    } else if (typeof electron === 'string') {
+      // In some Electron versions, require('electron') returns path
+      // Check if there's a default export or other way
+      console.log('require(electron) returned path:', electron);
+    }
+  } catch (e) {
+    console.log('Error requiring electron:', e.message);
   }
-} catch (e) {
-  console.log('Error requiring electron:', e.message);
 }
 
-// Check for process.versions.electron to verify we're in Electron
+// Check for process.versions.electron
 const isElectron = process.versions && process.versions.electron;
 console.log('Running in Electron:', !!isElectron);
 console.log('Electron version:', process.versions.electron);
 console.log('Node version:', process.versions.node);
 console.log('App available:', typeof app);
 console.log('BrowserWindow available:', typeof BrowserWindow);
+console.log('Global keys:', Object.keys(global).filter(k => k.includes('lectron') || k === 'app'));
+
+// If still not available, we need to wait for it
+if (!app) {
+  console.log('Waiting for Electron app to be available...');
+}
 
 require('dotenv').config();
 
