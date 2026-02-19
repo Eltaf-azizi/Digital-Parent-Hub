@@ -1,69 +1,52 @@
 // Electron main process
+// Note: This application can run in two modes:
+// 1. Web Server mode: Run `node server.js` and open http://localhost:3000
+// 2. Desktop mode: Run `npm start` (requires proper Electron setup)
+
 const path = require('path');
 const fs = require('fs');
 
-// The electron npm package has a specific structure
-// Let's find and load electron properly
+// Try to get electron modules
 let app, BrowserWindow, ipcMain, Notification, dialog;
 
-// Try multiple approaches to get electron
-const electronPath = path.join(__dirname, 'node_modules', 'electron', 'dist', 'resources', 'app.asar.unpacked', 'node_modules', 'electron');
-const electronPath2 = path.join(__dirname, 'node_modules', 'electron', 'dist', 'resources', 'app', 'node_modules', 'electron');
+// Check if we're in Electron context
+const isElectron = process.versions && process.versions.electron;
 
-console.log('Checking paths...');
-console.log('Path 1:', electronPath, 'exists:', fs.existsSync(electronPath));
-console.log('Path 2:', electronPath2, 'exists:', fs.existsSync(electronPath2));
-
-// Let's try loading from the dist folder directly
-try {
-  // In Electron, the modules are in different locations
-  // Let's try to require from the asar
-  const asarPath = path.join(__dirname, 'node_modules', 'electron', 'dist', 'resources', 'app.asar');
-  console.log('asar exists:', fs.existsSync(asarPath));
-  
-  // Try to find where electron modules actually are
-  const distPath = path.join(__dirname, 'node_modules', 'electron', 'dist');
-  if (fs.existsSync(distPath)) {
-    const distContents = fs.readdirSync(distPath);
-    console.log('dist contents:', distContents.slice(0, 10));
+if (isElectron) {
+  // In Electron context - try to get the modules
+  try {
+    const electron = require('electron');
+    if (typeof electron === 'object' && electron.app) {
+      ({ app, BrowserWindow, ipcMain, Notification, dialog } = electron);
+      console.log('Electron modules loaded successfully');
+    } else {
+      console.log('Warning: Running in Electron but require(electron) did not return expected module');
+      console.log('This may be an environment issue. Try running web server instead: node server.js');
+    }
+  } catch (e) {
+    console.log('Error loading electron:', e.message);
   }
-} catch(e) {
-  console.log('Error checking paths:', e.message);
-}
-
-// Since we're in Electron, let's check if we can access electron via process.binding
-// In older Electron this worked, but it might not in newer versions
-try {
-  if (process.binding) {
-    console.log('process.binding is available');
-  }
-} catch(e) {
-  console.log('process.binding error:', e.message);
-}
-
-// Let's try yet another approach - use require with the full path to electron's index.js
-try {
-  // The electron package has an index.js that returns the path
-  // We need to manually load the electron module from its internal location
-  
-  // In the electron npm package, the actual electron module is in the dist folder
-  // But we can't directly require it because it's a native module
-  
-  // Let's check if there's an electron.asar or similar
-  const appPath = path.join(__dirname, 'node_modules', 'electron', 'dist', 'resources', 'app');
-  console.log('app path exists:', fs.existsSync(appPath));
-  
-  if (fs.existsSync(appPath)) {
-    const appContents = fs.readdirSync(appPath);
-    console.log('app contents:', appContents.slice(0, 10));
-  }
-} catch(e) {
-  console.log('Error:', e.message);
+} else {
+  console.log('Not running in Electron context');
 }
 
 console.log('App available:', typeof app);
 console.log('BrowserWindow available:', typeof BrowserWindow);
-console.log('process.versions.electron:', process.versions.electron);
+
+// If app is not available, we can't proceed with Electron mode
+// The application will exit here, but users can run the web server instead
+if (!app) {
+  console.log('');
+  console.log('========================================');
+  console.log('Cannot start Electron desktop mode.');
+  console.log('Please run the web server instead:');
+  console.log('  node server.js');
+  console.log('Then open http://localhost:3000');
+  console.log('========================================');
+  
+  // Exit with error code
+  process.exit(1);
+}
 
 require('dotenv').config();
 
