@@ -223,7 +223,6 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ---
 
-**Digital Parent Hub** - Promoting healthy digital habits, one family at a time.
 
 ## 🙏 Acknowledgments
 
@@ -231,5 +230,6 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - Database powered by [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
 - UI components with [React](https://reactjs.org/)
 - Charts with [Recharts](https://recharts.org/)
+
 
 
