@@ -222,14 +222,3 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 5. Submit a pull request
 
 ---
-
-
-## 🙏 Acknowledgments
-
-- Built with [Electron](https://electronjs.org/)
-- Database powered by [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
-- UI components with [React](https://reactjs.org/)
-- Charts with [Recharts](https://recharts.org/)
-
-
-
